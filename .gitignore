@@ -64,3 +64,10 @@ core.*
 Thumbs.db
 
 deps_offline/extracted/
+
+# Runtime data
+data/*
+!data/.gitkeep
+data/*.db
+data/*.db-shm
+data/*.db-wal
