@@ -1,4 +1,4 @@
-// proto/hmi_protocol.proto
+// docs/冻结资产/hmi_protocol.proto
 // QDGZ300 HMI 显控协议 Protobuf 定义
 // 用于 M04 Gateway ↔ HMI 通信
 // 协议基于 V3.1 冻结定义

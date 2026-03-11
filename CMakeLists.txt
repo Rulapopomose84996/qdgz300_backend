@@ -20,7 +20,7 @@ qdgz300_enable_global_warnings()
 # 第三方依赖
 # ==============================================================================
 include(cmake/CompilerOptions.cmake OPTIONAL)
-add_subdirectory(third_party)
+include(cmake/third_party.cmake)
 
 # ==============================================================================
 # Linux 系统库检测 (libnuma, librt, libdl)
@@ -134,5 +134,5 @@ install(DIRECTORY config/ DESTINATION etc/qdgz300 OPTIONAL)
 # ==============================================================================
 if(BUILD_TESTING)
     add_subdirectory(tests)
-    add_subdirectory(benches)
+    add_subdirectory(tools/benchmarks)
 endif()

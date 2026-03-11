@@ -10,7 +10,7 @@ cmake --build build -j
 ## Run (Linux target host)
 
 ```bash
-numactl --cpunodebind=1 --membind=1 ./build/benches/numa_affinity --iterations 200000 --threads 8
+numactl --cpunodebind=1 --membind=1 ./build/tools/benchmarks/numa_affinity --iterations 200000 --threads 8
 ```
 
 ## Output fields

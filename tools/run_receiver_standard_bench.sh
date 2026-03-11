@@ -22,7 +22,7 @@ THROUGHPUT_STEPS_MBPS=(500 1000 2000 5000 8000 10000)
 SENS_PACKET_SIZES=(1500 1024 512 256 128)
 SENS_TARGET_MBPS=5000
 
-RX_BIN="${BUILD_DIR}/benches/bench_m01_rx_limit"
+RX_BIN="${BUILD_DIR}/tools/benchmarks/bench_m01_rx_limit"
 TX_BIN="${BUILD_DIR}/fpga_emulator"
 
 usage() {
@@ -94,7 +94,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-RX_BIN="${BUILD_DIR}/benches/bench_m01_rx_limit"
+RX_BIN="${BUILD_DIR}/tools/benchmarks/bench_m01_rx_limit"
 TX_BIN="${BUILD_DIR}/fpga_emulator"
 
 mkdir -p "${RESULTS_DIR}"

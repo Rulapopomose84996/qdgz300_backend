@@ -200,7 +200,7 @@ sudo journalctl -u qdgz300-receiver.service -n 50 --no-pager
 ### Phase 2
 
 - 顶层 `CMakeLists.txt` 拆分为模块编排式结构
-- 新增 `third_party/CMakeLists.txt`
+- 新增 `cmake/third_party.cmake`
 - 新增 `cmake/options.cmake` 和 `cmake/warnings.cmake`
 - 已实现模块下沉到 `src/*/CMakeLists.txt`
 

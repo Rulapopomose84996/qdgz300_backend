@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     std::cout << "throughput_pps=" << throughput_pps << "\n";
     std::cout << "p99_latency_ms=" << p99_latency_ms << "\n";
     std::cout << "cross_node_access_pct=" << cross_node_access_pct << "\n";
-    std::cout << "run_hint=numactl --cpunodebind=1 --membind=1 ./build/benches/numa_affinity --iterations 200000 --threads 8\n";
+    std::cout << "run_hint=numactl --cpunodebind=1 --membind=1 ./build/tools/benchmarks/numa_affinity --iterations 200000 --threads 8\n";
 
     return 0;
 }

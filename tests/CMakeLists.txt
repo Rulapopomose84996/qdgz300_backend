@@ -1,7 +1,7 @@
 # tests — split into stable unit and integration entry points for Kylin V10.
 
 if(NOT TARGET GTest::gtest_main)
-    message(WARNING "GTest targets not found in tests/CMakeLists.txt. Ensure third_party/CMakeLists sets them up.")
+    message(WARNING "GTest targets not found in tests/CMakeLists.txt. Ensure cmake/third_party.cmake sets them up.")
     return()
 endif()
 

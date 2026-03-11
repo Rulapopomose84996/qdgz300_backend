@@ -301,7 +301,7 @@ def run_raw_case(case_name: str, target_pps: int, measure: float = 8.0, payload:
         "taskset",
         "-c",
         "20",
-        str(REPO / "build_release/benches/bench_m01_rx_limit"),
+        str(REPO / "build_release/tools/benchmarks/bench_m01_rx_limit"),
         "--bind-ip",
         "127.0.0.1",
         "--port",

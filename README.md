@@ -27,8 +27,9 @@ qdgz300_backend/
 ├── tests/
 │   ├── unit/
 │   └── integration/
-├── benches/
 ├── tools/
+│   ├── benchmarks/
+│   └── fpga_emulator/
 ├── scripts/
 ├── deploy/
 ├── docs/
@@ -104,7 +105,7 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 - `deploy/systemd/cpu-performance.service`
 - `deploy/sysctl/90-qdgz300.conf`
 
-更多说明见 [deploy/README.md](deploy/README.md) 和 [docs/部署基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md](docs/部署基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md)。
+更多说明见 [deploy/README.md](deploy/README.md) 和 [docs/基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md](docs/基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md)。
 
 ## 当前状态
 
@@ -116,6 +117,6 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 
 ## 入口文档
 
-- [重构工作入口](docs/项目进展/00_工作入口.md)
-- [重构分阶段计划](docs/项目规划/QDGZ300_重构分阶段计划.md)
-- [麒麟 V10 ARM64 CoreX/CUDA 部署基线](docs/部署基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md)
+- [重构工作入口](docs/进展/00_工作入口.md)
+- [重构分阶段计划](docs/规划/QDGZ300_重构分阶段计划.md)
+- [麒麟 V10 ARM64 CoreX/CUDA 部署基线](docs/基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md)
