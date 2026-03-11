@@ -56,6 +56,17 @@ function(add_m03_unit_test NAME SOURCE)
     qdgz300_register_unit_test(${NAME})
 endfunction()
 
+function(add_m04_unit_test NAME SOURCE)
+    add_executable(${NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}")
+    target_link_libraries(${NAME}
+        PRIVATE
+        qdgz300_m04
+        GTest::gtest
+        GTest::gtest_main
+    )
+    qdgz300_register_unit_test(${NAME})
+endfunction()
+
 add_common_unit_test(common_spsc_queue_tests common_spsc_queue_tests.cpp)
 add_common_unit_test(common_memory_pool_tests common_memory_pool_tests.cpp)
 add_common_unit_test(common_types_tests common_types_tests.cpp)
@@ -81,6 +92,7 @@ add_m02_unit_test(gpu_dispatcher_tests gpu_dispatcher_tests.cpp)
 add_m02_unit_test(m02_resource_pool_tests m02_resource_pool_tests.cpp)
 add_m02_unit_test(m02_signal_proc_tests m02_signal_proc_tests.cpp)
 add_m03_unit_test(m03_data_proc_tests m03_data_proc_tests.cpp)
+add_m04_unit_test(m04_gateway_tests m04_gateway_tests.cpp)
 
 # Disabled until legacy protocol APIs are reintroduced or tests are rewritten.
 # add_receiver_unit_test(protocol_tests protocol_tests.cpp)
