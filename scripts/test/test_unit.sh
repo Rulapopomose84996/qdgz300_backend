@@ -17,7 +17,8 @@ TEST_REGEX="${QDGZ300_TEST_REGEX:-}"
 
 [[ -d "${BUILD_DIR_INPUT}/tests/unit" ]] || { echo "[ERROR] Unit test directory not found: ${BUILD_DIR_INPUT}/tests/unit" >&2; exit 1; }
 
-ctest_cmd=(ctest --test-dir "${BUILD_DIR_INPUT}/tests/unit" --output-on-failure)
+cd "${BUILD_DIR_INPUT}/tests/unit"
+ctest_cmd=(ctest --output-on-failure)
 if [[ -n "${TEST_REGEX}" ]]; then
   ctest_cmd+=(-R "${TEST_REGEX}")
 fi

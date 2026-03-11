@@ -13,4 +13,4 @@ EOF
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="${1:-${QDGZ300_BUILD_DIR:-${ROOT_DIR}/build_production}}"
-ctest --test-dir "${BUILD_DIR}/tests/unit" --output-on-failure -L "m04"
+"${BUILD_DIR}/tests/unit/m04_gateway_tests"

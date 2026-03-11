@@ -13,4 +13,19 @@ EOF
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="${1:-${QDGZ300_BUILD_DIR:-${ROOT_DIR}/build_production}}"
-ctest --test-dir "${BUILD_DIR}/tests/unit" --output-on-failure -L "m01"
+UNIT_DIR="${BUILD_DIR}/tests/unit"
+
+for bin in \
+  config_manager_tests \
+  metrics_tests \
+  packet_pool_tests \
+  pcap_writer_tests \
+  rawblock_adapter_tests \
+  reassembler_tests \
+  reorderer_tests \
+  spsc_queue_tests \
+  stub_consumer_tests \
+  udp_receiver_tests
+do
+  "${UNIT_DIR}/${bin}"
+done
