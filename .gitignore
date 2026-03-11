@@ -1,5 +1,7 @@
 # Build artifacts
 build/
+!scripts/build/
+!scripts/build/*.sh
 bin/
 lib/
 build_*/
