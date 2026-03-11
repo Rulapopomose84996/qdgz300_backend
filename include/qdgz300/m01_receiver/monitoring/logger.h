@@ -119,6 +119,12 @@ namespace receiver
             template <typename... Args>
             void logf(LogLevel level, const char *fmt, Args &&...args)
             {
+                if constexpr (sizeof...(Args) == 0)
+                {
+                    log(level, fmt == nullptr ? std::string{} : std::string(fmt));
+                    return;
+                }
+
                 int size = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
                 if (size <= 0)
                 {
@@ -133,6 +139,12 @@ namespace receiver
             template <typename... Args>
             void logf_with_trace(LogLevel level, const char *trace_id, const char *fmt, Args &&...args)
             {
+                if constexpr (sizeof...(Args) == 0)
+                {
+                    log(level, fmt == nullptr ? std::string{} : std::string(fmt), trace_id);
+                    return;
+                }
+
                 int size = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
                 if (size <= 0)
                 {

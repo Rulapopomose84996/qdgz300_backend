@@ -1,7 +1,14 @@
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include "qdgz300/m02_signal_proc/gpu_pipeline.h"
 #include "qdgz300/common/plot_batch_utils.h"
 #undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <chrono>
 #include <cmath>

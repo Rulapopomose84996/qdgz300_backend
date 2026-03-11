@@ -273,7 +273,6 @@ namespace receiver
                 [&fp, &ctx]()
                 {
                     auto &metrics = monitoring::MetricsCollector::instance();
-                    auto &logger = monitoring::Logger::instance();
 
                     while (ctx.processing_running.load(std::memory_order_acquire))
                     {

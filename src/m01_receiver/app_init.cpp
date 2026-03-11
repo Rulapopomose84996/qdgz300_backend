@@ -65,59 +65,6 @@ namespace
         return receiver::monitoring::LogLevel::INFO;
     }
 
-    /**
-     * @brief 将协议层 PacketType 映射为监控层 PacketTypeIndex
-     *
-     * MetricsCollector 使用 PacketTypeIndex 作为数组下标来维护
-     * per-type 的收包计数器，因此需要进行类型转换。
-     *
-     * @param packet_type 协议头中的 packet_type 字段（uint8_t）
-     * @return 对应的 PacketTypeIndex；未知类型返回 UNKNOWN
-     */
-    receiver::monitoring::PacketTypeIndex packet_type_index(uint8_t packet_type)
-    {
-        switch (static_cast<receiver::protocol::PacketType>(packet_type))
-        {
-        case receiver::protocol::PacketType::DATA:
-            return receiver::monitoring::PacketTypeIndex::DATA;
-        case receiver::protocol::PacketType::HEARTBEAT:
-            return receiver::monitoring::PacketTypeIndex::HEARTBEAT;
-        default:
-            return receiver::monitoring::PacketTypeIndex::UNKNOWN;
-        }
-    }
-
-    /**
-     * @brief 将协议校验结果映射为丢包原因索引
-     *
-     * 当 Validator 返回非 OK 的 ValidationResult 时，调用此函数
-     * 将错误原因转换为 DropReasonIndex，以便 MetricsCollector 在
-     * 对应的 Prometheus Counter 上递增。
-     *
-     * @param result Validator::validate() 返回的校验结果
-     * @return 对应的丢包原因索引
-     */
-    receiver::monitoring::DropReasonIndex drop_reason_from_validation(receiver::protocol::ValidationResult result)
-    {
-        using receiver::monitoring::DropReasonIndex;
-        using receiver::protocol::ValidationResult;
-        switch (result)
-        {
-        case ValidationResult::INVALID_MAGIC:
-            return DropReasonIndex::INVALID_MAGIC; // 魔数不匹配
-        case ValidationResult::INVALID_VERSION:
-            return DropReasonIndex::VERSION_MISMATCH; // 协议版本不匹配
-        case ValidationResult::INVALID_DEST_ID:
-            return DropReasonIndex::DEST_ID_MISMATCH; // 目标设备 ID 不匹配
-        case ValidationResult::PAYLOAD_LEN_MISMATCH:
-        case ValidationResult::MALFORMED_PAYLOAD:
-            return DropReasonIndex::LENGTH_MISMATCH; // 载荷长度或结构异常
-        case ValidationResult::UNSUPPORTED_PACKET_TYPE:
-            return DropReasonIndex::NON_DATA_PACKET; // 不支持的报文类型
-        default:
-            return DropReasonIndex::LENGTH_MISMATCH; // 兜底分类
-        }
-    }
 } // namespace
 
 namespace receiver
@@ -296,6 +243,7 @@ namespace receiver
                     header.sequence_number = frame.key.frame_counter;
                     header.payload_len = static_cast<uint16_t>(frame.total_size);
                     header.timestamp = frame.data_timestamp;
+                    header.ext_flags = frame.is_complete ? 0u : 0x01u;
                     reorderer_ptr->insert_owned(header, std::move(frame.data), frame.total_size);
                 });
 

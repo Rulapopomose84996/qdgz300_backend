@@ -35,6 +35,7 @@ namespace receiver
             std::unique_ptr<uint8_t[]> owned_payload;
             size_t payload_size{0};
             bool is_zero_filled;
+            bool is_incomplete_frame{false};
             uint32_t sequence_number;
         };
 

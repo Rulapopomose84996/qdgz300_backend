@@ -36,7 +36,7 @@ namespace qdgz300::m01::delivery
         block->cpi_seq = packet.sequence_number;
         block->fragment_count = 1;
         block->data_size = static_cast<uint32_t>(packet.payload_size);
-        block->flags = packet.is_zero_filled
+        block->flags = (packet.is_zero_filled || packet.is_incomplete_frame)
                            ? static_cast<uint32_t>(receiver::delivery::RawBlockFlags::INCOMPLETE_FRAME)
                            : 0u;
 

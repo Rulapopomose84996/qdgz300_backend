@@ -46,29 +46,6 @@ namespace qdgz300
             return spdlog::level::info;
         }
 
-        /// spdlog 日志级别名称
-        const char *level_string(LogLevel level) noexcept
-        {
-            switch (level)
-            {
-            case LogLevel::TRACE:
-                return "TRACE";
-            case LogLevel::DEBUG:
-                return "DEBUG";
-            case LogLevel::INFO:
-                return "INFO";
-            case LogLevel::WARN:
-                return "WARN";
-            case LogLevel::ERROR:
-                return "ERROR";
-            case LogLevel::CRITICAL:
-                return "CRITICAL";
-            case LogLevel::OFF:
-                return "OFF";
-            }
-            return "UNKNOWN";
-        }
-
         /// 获取日志级别字符串用于 JSON
         const char *level_to_json_string(spdlog::level::level_enum lvl) noexcept
         {

@@ -91,6 +91,7 @@ namespace receiver
                 }
                 out.packet.total_size = protocol::COMMON_HEADER_SIZE + out.payload_size;
                 out.is_zero_filled = false;
+                out.is_incomplete_frame = (packet.header.ext_flags & 0x01u) != 0;
                 out.sequence_number = seq;
                 if (output_callback_)
                 {
@@ -184,6 +185,7 @@ namespace receiver
                 out.packet.payload = out.payload_size == 0 ? nullptr : out.owned_payload.get();
                 out.packet.total_size = protocol::COMMON_HEADER_SIZE + out.payload_size;
                 out.is_zero_filled = false;
+                out.is_incomplete_frame = (header.ext_flags & 0x01u) != 0;
                 out.sequence_number = seq;
                 if (output_callback_)
                 {
@@ -307,6 +309,7 @@ namespace receiver
                 out.packet.payload = out.payload_size == 0 ? nullptr : out.owned_payload.get();
                 out.packet.total_size = protocol::COMMON_HEADER_SIZE + out.payload_size;
                 out.is_zero_filled = false;
+                out.is_incomplete_frame = (slot.header.ext_flags & 0x01u) != 0;
                 out.sequence_number = impl_->window.next_expected_seq;
 
                 if (output_callback_)
@@ -346,6 +349,7 @@ namespace receiver
             pkt.packet.total_size = protocol::COMMON_HEADER_SIZE;
             pkt.payload_size = 0;
             pkt.is_zero_filled = true;
+            pkt.is_incomplete_frame = true;
             pkt.sequence_number = seq_num;
             return pkt;
         }
@@ -393,6 +397,7 @@ namespace receiver
                 out.packet.payload = out.payload_size == 0 ? nullptr : out.owned_payload.get();
                 out.packet.total_size = protocol::COMMON_HEADER_SIZE + out.payload_size;
                 out.is_zero_filled = false;
+                out.is_incomplete_frame = (slot.header.ext_flags & 0x01u) != 0;
                 out.sequence_number = slot.sequence;
                 if (output_callback_)
                 {

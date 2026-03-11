@@ -251,6 +251,7 @@ namespace
                 header.sequence_number = frame.key.frame_counter;
                 header.payload_len = static_cast<uint16_t>(frame.total_size);
                 header.timestamp = frame.data_timestamp;
+                header.ext_flags = frame.is_complete ? 0u : 0x01u;
                 reorderer->insert_owned(header, std::move(frame.data), frame.total_size);
             });
 
@@ -312,6 +313,7 @@ namespace
                 header.sequence_number = frame.key.frame_counter;
                 header.payload_len = static_cast<uint16_t>(frame.total_size);
                 header.timestamp = frame.data_timestamp;
+                header.ext_flags = frame.is_complete ? 0u : 0x01u;
                 reorderer->insert_owned(header, std::move(frame.data), frame.total_size);
             });
 

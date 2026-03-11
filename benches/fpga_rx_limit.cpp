@@ -363,7 +363,7 @@ namespace
 
         for (size_t t = 0; t < cfg.sender_threads; ++t)
         {
-            senders.emplace_back([&, t]()
+            senders.emplace_back([&]()
                                  {
                                      SocketHandle tx_fd = socket(AF_INET, SOCK_DGRAM, 0);
                                      if (tx_fd == kInvalidSocket)
