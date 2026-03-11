@@ -159,6 +159,33 @@ sudo bash deploy/install.sh build_production
 └── scripts/
 ```
 
+### 4.6 已验证的 systemd 启停链路
+
+已在服务器上验证通过的服务：
+
+- `qdgz300-sysctl.service`
+- `nic-optimization.service`
+- `cpu-performance.service`
+- `qdgz300-receiver.service`
+
+已验证通过的命令：
+
+```bash
+sudo systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-receiver.service
+sudo systemctl start qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-receiver.service
+sudo systemctl status qdgz300-receiver.service --no-pager
+sudo journalctl -u qdgz300-receiver.service -n 50 --no-pager
+```
+
+已验证的运行结果：
+
+- `receiver_app` 由 systemd 正常拉起
+- 运行路径：`/opt/qdgz300_backend/bin/receiver_app --config /opt/qdgz300_backend/config/receiver.yaml`
+- 三阵面监听配置已生效：
+  - `192.168.1.101:9999`
+  - `192.168.2.101:9999`
+  - `192.168.3.101:9999`
+
 ---
 
 ## 5. 当前阶段的验收目标
@@ -182,6 +209,22 @@ sudo bash deploy/install.sh build_production
 - `tests/` 已按 `unit/integration` 分层
 - 正式测试入口已写入脚本和 README
 - README 与部署文档已同步新的目录和测试入口
+
+### Phase 4
+
+- 当前构建仅装配已实现模块
+- 空壳模块已从装配链移除，不再产生持续 configure warning
+
+### Phase 5
+
+- `deploy/install.sh` 已补齐
+- `qdgz300-receiver.service` 与安装目录布局已补齐
+- 服务器安装链路已验证通过
+
+### Phase 6
+
+- README、部署基线、工作入口已同步当前真实状态
+- 服务器 systemd 启停链路已写入文档
 
 ---
 
