@@ -7,6 +7,35 @@ namespace receiver
 {
     namespace pipeline
     {
+        namespace
+        {
+            size_t infer_missing_fragment_size(const ReassemblyContext &ctx,
+                                              uint16_t frag_index,
+                                              const ReassemblerConfig &config,
+                                              uint8_t channel_count,
+                                              uint8_t data_type)
+            {
+                if (frag_index + 1 == ctx.total_frags)
+                {
+                    return ctx.tail_frag_payload_bytes;
+                }
+
+                for (uint16_t i = 0; i < ctx.total_frags; ++i)
+                {
+                    if (i + 1 == ctx.total_frags)
+                    {
+                        continue;
+                    }
+                    if (i < ctx.fragment_sizes.size() && ctx.fragment_sizes[i] > 0)
+                    {
+                        return ctx.fragment_sizes[i];
+                    }
+                }
+
+                const size_t complex_size = (data_type == 0x02) ? 8u : 4u;
+                return config.sample_count_fixed * complex_size * channel_count;
+            }
+        } // namespace
 
         Reassembler::Reassembler(const ReassemblerConfig &config, FrameCompleteCallback callback)
             : config_(config),
@@ -324,12 +353,7 @@ namespace receiver
             ctx->data_timestamp = data_timestamp;
             ctx->fragment_sizes.assign(total_frags, 0);
             ctx->fragment_refs.resize(total_frags);
-            const uint8_t channel_count = static_cast<uint8_t>(protocol::popcount16(key.channel_mask));
-            ctx->total_payload_size = calculate_total_payload_size(
-                total_frags,
-                tail_frag_payload_bytes,
-                channel_count,
-                key.data_type);
+            ctx->total_payload_size = 0;
 
             ReassemblyContext *ptr = ctx.get();
             contexts_.emplace(key, std::move(ctx));
@@ -365,14 +389,13 @@ namespace receiver
                 return false;
             }
 
-            const uint8_t channel_count = static_cast<uint8_t>(protocol::popcount16(ctx->key.channel_mask));
-            const size_t expected_size = calculate_fragment_payload_size(
-                header.frag_index,
-                ctx->total_frags,
-                ctx->tail_frag_payload_bytes,
-                channel_count,
-                ctx->key.data_type);
-            if (fragment_payload_size != expected_size)
+            if (header.is_tail_fragment() &&
+                fragment_payload_size != static_cast<size_t>(ctx->tail_frag_payload_bytes))
+            {
+                return false;
+            }
+
+            if (!header.is_tail_fragment() && fragment_payload_size == 0)
             {
                 return false;
             }
@@ -387,6 +410,7 @@ namespace receiver
             ctx->received_fragments.set(header.frag_index);
             ctx->received_count++;
             ctx->received_payload_bytes += fragment_payload_size;
+            ctx->total_payload_size += fragment_payload_size;
             ctx->is_complete = ctx->check_complete();
             return true;
         }
@@ -420,14 +444,13 @@ namespace receiver
                 return false;
             }
 
-            const uint8_t channel_count = static_cast<uint8_t>(protocol::popcount16(ctx->key.channel_mask));
-            const size_t expected_size = calculate_fragment_payload_size(
-                header.frag_index,
-                ctx->total_frags,
-                ctx->tail_frag_payload_bytes,
-                channel_count,
-                ctx->key.data_type);
-            if (fragment_payload_size != expected_size)
+            if (header.is_tail_fragment() &&
+                fragment_payload_size != static_cast<size_t>(ctx->tail_frag_payload_bytes))
+            {
+                return false;
+            }
+
+            if (!header.is_tail_fragment() && fragment_payload_size == 0)
             {
                 return false;
             }
@@ -443,6 +466,7 @@ namespace receiver
             ctx->received_fragments.set(header.frag_index);
             ctx->received_count++;
             ctx->received_payload_bytes += fragment_payload_size;
+            ctx->total_payload_size += fragment_payload_size;
             ctx->is_complete = ctx->check_complete();
             return true;
         }
@@ -461,18 +485,30 @@ namespace receiver
             frame.data_timestamp = ctx->data_timestamp;
             frame.execution_snapshot = ctx->execution_snapshot;
             frame.has_execution_snapshot = ctx->has_execution_snapshot;
-            frame.total_size = ctx->total_payload_size;
+            frame.total_size = 0;
 
             // 从 fragment_refs 一次性顺序组装最终帧缓冲区
             const uint8_t channel_count = static_cast<uint8_t>(protocol::popcount16(key.channel_mask));
-            auto assembled = std::make_unique<uint8_t[]>(ctx->total_payload_size);
+            size_t assembled_size = 0;
+            for (uint16_t i = 0; i < ctx->total_frags; ++i)
+            {
+                if (ctx->received_fragments.test(i) &&
+                    i < ctx->fragment_refs.size() &&
+                    ctx->fragment_refs[i].has_data())
+                {
+                    assembled_size += ctx->fragment_refs[i].data_size;
+                }
+                else
+                {
+                    assembled_size += infer_missing_fragment_size(*ctx, i, config_, channel_count, key.data_type);
+                }
+            }
+
+            frame.total_size = assembled_size;
+            auto assembled = std::make_unique<uint8_t[]>(assembled_size);
             size_t write_pos = 0;
             for (uint16_t i = 0; i < ctx->total_frags; ++i)
             {
-                const size_t frag_expected_size = calculate_fragment_payload_size(
-                    i, ctx->total_frags, ctx->tail_frag_payload_bytes,
-                    channel_count, key.data_type);
-
                 if (ctx->received_fragments.test(i) &&
                     i < ctx->fragment_refs.size() &&
                     ctx->fragment_refs[i].has_data())
@@ -481,15 +517,18 @@ namespace receiver
                     std::memcpy(assembled.get() + write_pos,
                                 ctx->fragment_refs[i].data,
                                 ctx->fragment_refs[i].data_size);
+                    write_pos += ctx->fragment_refs[i].data_size;
                 }
                 else
                 {
+                    const size_t missing_size =
+                        infer_missing_fragment_size(*ctx, i, config_, channel_count, key.data_type);
                     // 缺失分片：零填充
-                    std::memset(assembled.get() + write_pos, 0, frag_expected_size);
+                    std::memset(assembled.get() + write_pos, 0, missing_size);
                     frame.is_complete = false;
                     frame.missing_frag_indices.push_back(i);
+                    write_pos += missing_size;
                 }
-                write_pos += frag_expected_size;
             }
             frame.data = std::move(assembled);
 

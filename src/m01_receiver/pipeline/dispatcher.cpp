@@ -205,12 +205,15 @@ namespace receiver
             }
 
             const uint32_t wire_crc = read_u32_le(queued.payload.data() + kHeartbeatCrcOffset);
-            const uint32_t calc_crc = protocol::crc32c(queued.payload.data(), kHeartbeatDataLen);
-            if (wire_crc != calc_crc)
+            if (wire_crc != 0)
             {
-                heartbeat_stats_.loss_total.fetch_add(1, std::memory_order_relaxed);
-                stats_.dropped_packets.fetch_add(1, std::memory_order_relaxed);
-                return;
+                const uint32_t calc_crc = protocol::crc32c(queued.payload.data(), kHeartbeatDataLen);
+                if (wire_crc != calc_crc)
+                {
+                    heartbeat_stats_.loss_total.fetch_add(1, std::memory_order_relaxed);
+                    stats_.dropped_packets.fetch_add(1, std::memory_order_relaxed);
+                    return;
+                }
             }
 
             if (has_last_heartbeat_seq_)
@@ -255,12 +258,15 @@ namespace receiver
             }
 
             const uint32_t wire_crc = read_u32_le(packet.payload + kHeartbeatCrcOffset);
-            const uint32_t calc_crc = protocol::crc32c(packet.payload, kHeartbeatDataLen);
-            if (wire_crc != calc_crc)
+            if (wire_crc != 0)
             {
-                heartbeat_stats_.loss_total.fetch_add(1, std::memory_order_relaxed);
-                stats_.dropped_packets.fetch_add(1, std::memory_order_relaxed);
-                return;
+                const uint32_t calc_crc = protocol::crc32c(packet.payload, kHeartbeatDataLen);
+                if (wire_crc != calc_crc)
+                {
+                    heartbeat_stats_.loss_total.fetch_add(1, std::memory_order_relaxed);
+                    stats_.dropped_packets.fetch_add(1, std::memory_order_relaxed);
+                    return;
+                }
             }
 
             if (has_last_heartbeat_seq_)
