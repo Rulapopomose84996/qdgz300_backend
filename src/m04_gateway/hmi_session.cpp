@@ -24,9 +24,19 @@ namespace qdgz300::m04
 
     void HmiSessionManager::sweep_timeouts(uint64_t now_ns, uint64_t timeout_ns)
     {
+        uint64_t newest_seen = 0;
+        for (const auto &[_, session] : sessions_)
+        {
+            if (session.last_pong_ns > newest_seen)
+            {
+                newest_seen = session.last_pong_ns;
+            }
+        }
+
+        const uint64_t expire_before = (newest_seen > timeout_ns) ? (newest_seen - timeout_ns) : 0;
         for (auto &[_, session] : sessions_)
         {
-            if (session.last_pong_ns + timeout_ns < now_ns)
+            if (session.last_pong_ns < expire_before && session.last_pong_ns + timeout_ns < now_ns)
             {
                 session.alive = false;
             }
