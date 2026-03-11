@@ -1,32 +1,63 @@
 # Third-party dependency setup. Prefer system packages first, then local offline sources.
 
+function(qdgz300_ensure_spdlog_target)
+    if(TARGET spdlog::spdlog)
+        return()
+    endif()
+
+    if(TARGET spdlog)
+        add_library(spdlog::spdlog ALIAS spdlog)
+        return()
+    endif()
+
+    if(TARGET spdlog_header_only)
+        add_library(spdlog::spdlog ALIAS spdlog_header_only)
+    endif()
+endfunction()
+
+function(qdgz300_ensure_yaml_target)
+    if(TARGET yaml-cpp::yaml-cpp)
+        return()
+    endif()
+
+    if(TARGET yaml-cpp)
+        add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
+    endif()
+endfunction()
+
 find_package(spdlog CONFIG QUIET)
-if(spdlog_FOUND)
+qdgz300_ensure_spdlog_target()
+if(spdlog_FOUND AND TARGET spdlog::spdlog)
     message(STATUS "Found spdlog: system installed version ${spdlog_VERSION}")
 elseif(EXISTS "${DEPS_OFFLINE_ROOT}/spdlog-1.13.0")
-    message(STATUS "spdlog not found on system. Building from local offline source.")
-    add_subdirectory("${DEPS_OFFLINE_ROOT}/spdlog-1.13.0" EXCLUDE_FROM_ALL)
-    if(NOT TARGET spdlog::spdlog)
-        add_library(spdlog::spdlog ALIAS spdlog)
-    endif()
+    message(STATUS "spdlog target not available from system package. Building from local offline source.")
+    add_subdirectory(
+        "${DEPS_OFFLINE_ROOT}/spdlog-1.13.0"
+        "${CMAKE_BINARY_DIR}/third_party/spdlog"
+        EXCLUDE_FROM_ALL
+    )
+    qdgz300_ensure_spdlog_target()
 else()
-    message(FATAL_ERROR "Local spdlog source not found at ${DEPS_OFFLINE_ROOT}/spdlog-1.13.0")
+    message(FATAL_ERROR "spdlog target not available, and local source not found at ${DEPS_OFFLINE_ROOT}/spdlog-1.13.0")
 endif()
 
 find_package(yaml-cpp CONFIG QUIET)
-if(yaml-cpp_FOUND)
+qdgz300_ensure_yaml_target()
+if(yaml-cpp_FOUND AND TARGET yaml-cpp::yaml-cpp)
     message(STATUS "Found yaml-cpp: system installed version")
 elseif(EXISTS "${DEPS_OFFLINE_ROOT}/yaml-cpp-0.8.0")
-    message(STATUS "yaml-cpp not found on system. Building from local offline source.")
+    message(STATUS "yaml-cpp target not available from system package. Building from local offline source.")
     set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
     set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-    add_subdirectory("${DEPS_OFFLINE_ROOT}/yaml-cpp-0.8.0" EXCLUDE_FROM_ALL)
-    if(NOT TARGET yaml-cpp::yaml-cpp AND TARGET yaml-cpp)
-        add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
-    endif()
+    add_subdirectory(
+        "${DEPS_OFFLINE_ROOT}/yaml-cpp-0.8.0"
+        "${CMAKE_BINARY_DIR}/third_party/yaml-cpp"
+        EXCLUDE_FROM_ALL
+    )
+    qdgz300_ensure_yaml_target()
 else()
-    message(FATAL_ERROR "Local yaml-cpp source not found at ${DEPS_OFFLINE_ROOT}/yaml-cpp-0.8.0")
+    message(FATAL_ERROR "yaml-cpp target not available, and local source not found at ${DEPS_OFFLINE_ROOT}/yaml-cpp-0.8.0")
 endif()
 
 if(ENABLE_PROTOBUF)
@@ -40,12 +71,16 @@ endif()
 
 if(BUILD_TESTING)
     find_package(GTest CONFIG QUIET)
-    if(GTest_FOUND)
+    if(GTest_FOUND AND TARGET GTest::gtest AND TARGET GTest::gtest_main)
         message(STATUS "Found GTest: system installed version")
     elseif(EXISTS "${DEPS_OFFLINE_ROOT}/googletest-1.14.0")
         message(STATUS "GTest not found on system. Building from local offline source.")
         set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-        add_subdirectory("${DEPS_OFFLINE_ROOT}/googletest-1.14.0" EXCLUDE_FROM_ALL)
+        add_subdirectory(
+            "${DEPS_OFFLINE_ROOT}/googletest-1.14.0"
+            "${CMAKE_BINARY_DIR}/third_party/googletest"
+            EXCLUDE_FROM_ALL
+        )
         if(NOT TARGET GTest::gtest)
             add_library(GTest::gtest ALIAS gtest)
         endif()
