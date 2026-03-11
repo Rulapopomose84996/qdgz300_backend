@@ -4,7 +4,7 @@ function(qdgz300_enable_global_warnings)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         add_compile_options(-Wall -Wextra -Wpedantic)
 
-        if(ENABLE_COVERAGE)
+        if(QDGZ300_ENABLE_COVERAGE)
             add_compile_options(-O0 -g -fprofile-arcs -ftest-coverage)
             add_link_options(-fprofile-arcs -ftest-coverage)
         endif()

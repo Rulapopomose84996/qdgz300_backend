@@ -1,6 +1,3 @@
-# benches/CMakeLists.txt
-# Benchmark executables
-
 add_executable(bench_stress stress_test.cpp)
 target_link_libraries(bench_stress PRIVATE Threads::Threads)
 
@@ -14,18 +11,16 @@ target_link_libraries(bench_fpga_rx_limit PRIVATE Threads::Threads)
 add_executable(bench_m01_rx_limit m01_rx_limit.cpp)
 target_link_libraries(bench_m01_rx_limit PRIVATE receiver_core Threads::Threads)
 
-add_test(NAME bench_stress COMMAND bench_stress)
-add_test(NAME bench_capacity COMMAND bench_capacity)
-add_test(NAME bench_fpga_rx_limit COMMAND bench_fpga_rx_limit)
-add_test(NAME bench_m01_rx_limit COMMAND bench_m01_rx_limit)
+install(TARGETS bench_stress bench_capacity bench_fpga_rx_limit bench_m01_rx_limit
+    RUNTIME DESTINATION bin/benchmarks)
 
-option(BENCH_ENABLE_LEGACY "Build legacy benchmark binaries" OFF)
-if(BENCH_ENABLE_LEGACY)
+option(QDGZ300_BUILD_LEGACY_BENCHMARKS "Build legacy benchmark binaries" OFF)
+if(QDGZ300_BUILD_LEGACY_BENCHMARKS)
     add_executable(bench_throughput throughput.cpp)
     target_link_libraries(bench_throughput PRIVATE receiver_core Threads::Threads)
-    add_test(NAME bench_throughput COMMAND bench_throughput)
 
     add_executable(bench_numa_affinity numa_affinity.cpp)
     target_link_libraries(bench_numa_affinity PRIVATE receiver_core Threads::Threads)
-    add_test(NAME bench_numa_affinity COMMAND bench_numa_affinity)
+    install(TARGETS bench_throughput bench_numa_affinity
+        RUNTIME DESTINATION bin/benchmarks)
 endif()

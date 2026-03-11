@@ -100,7 +100,7 @@ ctest --test-dir build_production/tests/unit --output-on-failure
 ### 4.1 服务器原生构建
 
 ```bash
-bash scripts/build_production.sh
+bash scripts/build/build_production.sh
 ```
 
 默认行为：
@@ -114,7 +114,7 @@ bash scripts/build_production.sh
 ### 4.2 WSL / Linux 交叉构建
 
 ```bash
-bash scripts/dev_build_wsl_cross.sh
+bash scripts/build/build_wsl_cross.sh
 ```
 
 默认行为：

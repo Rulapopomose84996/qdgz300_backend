@@ -14,8 +14,8 @@
 
 ## 当前正式入口
 
-- 服务器原生构建：`bash scripts/build_production.sh`
-- WSL/Linux 交叉构建：`bash scripts/dev_build_wsl_cross.sh`
+- 服务器原生构建：`bash scripts/build/build_production.sh`
+- WSL/Linux 交叉构建：`bash scripts/build/build_wsl_cross.sh`
 - 正式单测入口：`ctest --test-dir build_production/tests/unit --output-on-failure`
 
 ## 安装方式

@@ -47,3 +47,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 add_library(receiver_core ALIAS qdgz300_m01)
+
+add_executable(receiver_app main.cpp)
+target_link_libraries(receiver_app PRIVATE receiver_core)
+install(TARGETS receiver_app RUNTIME DESTINATION bin)

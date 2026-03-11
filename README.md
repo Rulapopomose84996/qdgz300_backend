@@ -42,14 +42,14 @@ qdgz300_backend/
 ### 服务器原生构建
 
 ```bash
-bash scripts/build_production.sh
+bash scripts/build/build_production.sh
 ```
 
 常用变量：
 
 ```bash
-ENABLE_GPU=ON BUILD_TESTS=ON RUN_TESTS=ON bash scripts/build_production.sh
-BUILD_TARGET=receiver_app RUN_TESTS=OFF bash scripts/build_production.sh
+QDGZ300_ENABLE_GPU=ON QDGZ300_BUILD_TESTING=ON QDGZ300_RUN_TESTS=ON bash scripts/build/build_production.sh
+QDGZ300_BUILD_TARGET=receiver_app QDGZ300_RUN_TESTS=OFF bash scripts/build/build_production.sh
 ```
 
 说明：
@@ -61,14 +61,14 @@ BUILD_TARGET=receiver_app RUN_TESTS=OFF bash scripts/build_production.sh
 ### WSL / Linux 交叉构建
 
 ```bash
-bash scripts/dev_build_wsl_cross.sh
+bash scripts/build/build_wsl_cross.sh
 ```
 
 常用变量：
 
 ```bash
-RUN_TESTS=ON bash scripts/dev_build_wsl_cross.sh
-BUILD_TARGET=receiver_app bash scripts/dev_build_wsl_cross.sh
+QDGZ300_RUN_TESTS=ON bash scripts/build/build_wsl_cross.sh
+QDGZ300_BUILD_TARGET=receiver_app bash scripts/build/build_wsl_cross.sh
 ```
 
 说明：
@@ -106,6 +106,13 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 - `deploy/sysctl/90-qdgz300.conf`
 
 更多说明见 [deploy/README.md](deploy/README.md) 和 [docs/基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md](docs/基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md)。
+
+脚本分层：
+
+- `scripts/build/`：构建脚本
+- `scripts/install/`：安装入口
+- `scripts/test/`：测试入口
+- `scripts/ops/`：运维检查脚本
 
 ## 当前状态
 
