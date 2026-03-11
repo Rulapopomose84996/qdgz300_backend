@@ -22,6 +22,7 @@ qdgz300_backend/
 │   ├── m02_signal_proc/
 │   ├── m03_data_proc/
 │   ├── m04_gateway/
+│   ├── control/
 │   └── logging/
 ├── tests/
 │   ├── unit/
@@ -107,10 +108,11 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 
 ## 当前状态
 
-- 已下沉模块：`common`、`m01_receiver`、`m02_signal_proc`、`m03_data_proc`、`m04_gateway`
+- 已下沉模块：`common`、`m01_receiver`、`m02_signal_proc`、`m03_data_proc`、`m04_gateway`、`control`
 - 已重组测试目录：`tests/unit`、`tests/integration`
 - `M03` 和 `M04` 已恢复最小可测实现
-- `control` 与 `towerguard` 当前仍未恢复真实实现，继续保持未装配状态
+- `control` 已恢复最小可测实现
+- `towerguard` 当前仍未恢复真实实现，继续保持未装配状态
 
 ## 入口文档
 
