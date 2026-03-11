@@ -104,7 +104,7 @@ namespace qdgz300::m02
         slot.submit_time = std::chrono::steady_clock::now();
         return ErrorCode::OK;
 #else
-        // TODO: H2D memcpy async → launch kernels → D2H memcpy async
+        // Future extension: replace CPU fallback with real GPU async copy and kernel execution.
         return ErrorCode::OK;
 #endif
     }

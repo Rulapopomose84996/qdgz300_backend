@@ -25,7 +25,7 @@ namespace qdgz300::m02
 
         size_t total = cpi_size * stream_count * pingpong_depth;
 #ifdef QDGZ300_HAS_GPU
-        // TODO: cudaMallocHost for pinned memory
+        // Future extension: replace host allocation with cudaMallocHost pinned buffers.
 #else
         const size_t alloc_size = align_up(total, kBufferAlignment);
         h2d_buffers_ = static_cast<uint8_t *>(aligned_alloc(kBufferAlignment, alloc_size));
@@ -52,7 +52,7 @@ namespace qdgz300::m02
     void PinnedBufferPool::destroy() noexcept
     {
 #ifdef QDGZ300_HAS_GPU
-        // TODO: cudaFreeHost
+        // Future extension: release pinned buffers through cudaFreeHost.
 #else
         std::free(h2d_buffers_);
         std::free(d2h_buffers_);

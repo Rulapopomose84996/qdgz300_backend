@@ -52,7 +52,7 @@ namespace receiver
             NORMAL = 1
         };
 
-        // Minimal control-plane ack tracking placeholder kept for API compatibility.
+        // Placeholder type kept only for API compatibility until the control plane is restored.
         class AckTracker
         {
         public:

@@ -66,3 +66,4 @@ sudo bash deploy/uninstall.sh
 - [工作入口](docs/进展/00_工作入口.md)
 - [重构计划](docs/规划/QDGZ300_重构分阶段计划.md)
 - [部署基线](docs/基线/麒麟V10_ARM64_CoreX_CUDA_部署基线.md)
+- [未实现能力清单](docs/规划/TODO_未实现能力.md)

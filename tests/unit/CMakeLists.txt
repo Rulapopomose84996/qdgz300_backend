@@ -1,13 +1,20 @@
 include(GoogleTest)
 
 function(qdgz300_register_unit_test NAME)
+    set(options)
+    set(one_value_args)
+    set(multi_value_args LABELS)
+    cmake_parse_arguments(QDGZ300_TEST "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
     if(COMMAND gtest_discover_tests)
         gtest_discover_tests(${NAME}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             DISCOVERY_MODE PRE_TEST
+            PROPERTIES LABELS "${QDGZ300_TEST_LABELS}"
         )
     else()
         add_test(NAME ${NAME} COMMAND $<TARGET_FILE:${NAME}>)
+        set_tests_properties(${NAME} PROPERTIES LABELS "${QDGZ300_TEST_LABELS}")
     endif()
 endfunction()
 
@@ -20,7 +27,7 @@ function(add_receiver_unit_test NAME SOURCE)
         GTest::gtest_main
         GTest::gmock
     )
-    qdgz300_register_unit_test(${NAME})
+    qdgz300_register_unit_test(${NAME} LABELS "unit;m01")
 endfunction()
 
 function(add_common_unit_test NAME SOURCE)
@@ -31,7 +38,7 @@ function(add_common_unit_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_unit_test(${NAME})
+    qdgz300_register_unit_test(${NAME} LABELS "unit;common")
 endfunction()
 
 function(add_m02_unit_test NAME SOURCE)
@@ -42,7 +49,7 @@ function(add_m02_unit_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_unit_test(${NAME})
+    qdgz300_register_unit_test(${NAME} LABELS "unit;m02")
 endfunction()
 
 function(add_m03_unit_test NAME SOURCE)
@@ -53,7 +60,7 @@ function(add_m03_unit_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_unit_test(${NAME})
+    qdgz300_register_unit_test(${NAME} LABELS "unit;m03")
 endfunction()
 
 function(add_m04_unit_test NAME SOURCE)
@@ -64,7 +71,7 @@ function(add_m04_unit_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_unit_test(${NAME})
+    qdgz300_register_unit_test(${NAME} LABELS "unit;m04")
 endfunction()
 
 function(add_control_unit_test NAME SOURCE)
@@ -75,7 +82,7 @@ function(add_control_unit_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_unit_test(${NAME})
+    qdgz300_register_unit_test(${NAME} LABELS "unit;control")
 endfunction()
 
 add_common_unit_test(common_spsc_queue_tests common_spsc_queue_tests.cpp)

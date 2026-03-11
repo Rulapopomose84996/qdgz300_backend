@@ -1,13 +1,20 @@
 include(GoogleTest)
 
 function(qdgz300_register_integration_test NAME)
+    set(options)
+    set(one_value_args)
+    set(multi_value_args LABELS)
+    cmake_parse_arguments(QDGZ300_TEST "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
     if(COMMAND gtest_discover_tests)
         gtest_discover_tests(${NAME}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             DISCOVERY_MODE PRE_TEST
+            PROPERTIES LABELS "${QDGZ300_TEST_LABELS}"
         )
     else()
         add_test(NAME ${NAME} COMMAND $<TARGET_FILE:${NAME}>)
+        set_tests_properties(${NAME} PROPERTIES LABELS "${QDGZ300_TEST_LABELS}")
     endif()
 endfunction()
 
@@ -20,7 +27,7 @@ function(add_receiver_integration_test NAME SOURCE)
         GTest::gtest_main
         GTest::gmock
     )
-    qdgz300_register_integration_test(${NAME})
+    qdgz300_register_integration_test(${NAME} LABELS "integration;m01")
 endfunction()
 
 function(add_m02_integration_test NAME SOURCE)
@@ -31,7 +38,7 @@ function(add_m02_integration_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_integration_test(${NAME})
+    qdgz300_register_integration_test(${NAME} LABELS "integration;m02")
 endfunction()
 
 function(add_m01_m02_integration_test NAME SOURCE)
@@ -43,7 +50,7 @@ function(add_m01_m02_integration_test NAME SOURCE)
         GTest::gtest
         GTest::gtest_main
     )
-    qdgz300_register_integration_test(${NAME})
+    qdgz300_register_integration_test(${NAME} LABELS "integration;m01;m02")
 endfunction()
 
 add_receiver_integration_test(integration_rawblock_delivery_tests integration_rawblock_delivery_tests.cpp)

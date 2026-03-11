@@ -7,7 +7,7 @@ namespace qdgz300::m02
     void CudaStreamPool::init()
     {
 #ifdef QDGZ300_HAS_GPU
-        // TODO: cudaStreamCreate for each stream, cudaEventCreate for each event
+        // Future extension: create CUDA streams and events for each processing lane.
 #else
         for (uint8_t i = 0; i < GPU_STREAM_COUNT; ++i)
         {
@@ -42,7 +42,7 @@ namespace qdgz300::m02
     void CudaStreamPool::destroy() noexcept
     {
 #ifdef QDGZ300_HAS_GPU
-        // TODO: cudaStreamDestroy, cudaEventDestroy
+        // Future extension: destroy CUDA streams and events.
 #else
         for (uint8_t i = 0; i < GPU_STREAM_COUNT; ++i)
         {

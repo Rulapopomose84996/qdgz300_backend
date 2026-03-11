@@ -35,7 +35,7 @@ namespace qdgz300::m02
 
     void GpuDispatcher::run() noexcept
     {
-        // TODO: bind_thread_to_cpu(19); set_realtime_priority(70);
+        // Future extension: bind the dispatcher thread to a dedicated data-plane CPU.
         while (running_.load(std::memory_order_relaxed))
         {
             bool did_work = false;
