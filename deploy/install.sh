@@ -2,6 +2,21 @@
 
 set -euo pipefail
 
+usage() {
+  cat <<'EOF'
+Usage:
+  sudo bash deploy/install.sh [build_dir]
+
+Environment:
+  INSTALL_ROOT   Install root (default: /opt/qdgz300_backend)
+  SERVICE_NAME   Service unit name without suffix (default: qdgz300-receiver)
+  SERVICE_USER   Service user (default: qdgz300)
+  SERVICE_GROUP  Service group (default: qdgz300)
+EOF
+}
+
+[[ "${1:-}" == "--help" ]] && { usage; exit 0; }
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR_INPUT="${1:-${ROOT_DIR}/build_production}"
 BUILD_DIR="$(cd "${BUILD_DIR_INPUT}" 2>/dev/null && pwd || true)"
@@ -15,6 +30,7 @@ CONFIG_DIR="${INSTALL_ROOT}/config"
 DATA_DIR="${INSTALL_ROOT}/data"
 LOG_DIR="${INSTALL_ROOT}/logs"
 SCRIPT_DIR="${INSTALL_ROOT}/scripts"
+RELEASES_DIR="${INSTALL_ROOT}/releases"
 
 log() {
   printf '[install] %s\n' "$*"
@@ -58,6 +74,24 @@ install_service_config() {
   fi
 }
 
+backup_existing_install() {
+  if [[ ! -d "${INSTALL_ROOT}" ]]; then
+    return 0
+  fi
+
+  if [[ ! -f "${BIN_DIR}/receiver_app" ]]; then
+    return 0
+  fi
+
+  local stamp
+  stamp="$(date '+%Y%m%d_%H%M%S')"
+  local backup_dir="${RELEASES_DIR}/${stamp}"
+  install -d -m 0755 "${backup_dir}/bin" "${backup_dir}/config"
+  cp -a "${BIN_DIR}/." "${backup_dir}/bin/" 2>/dev/null || true
+  cp -a "${CONFIG_DIR}/." "${backup_dir}/config/" 2>/dev/null || true
+  log "Backed up previous install to ${backup_dir}"
+}
+
 main() {
   require_root
   [[ -n "${BUILD_DIR}" && -d "${BUILD_DIR}" ]] || die "Build directory not found: ${BUILD_DIR_INPUT}"
@@ -66,7 +100,8 @@ main() {
   ensure_service_account
 
   log "Creating install layout under ${INSTALL_ROOT}"
-  install -d -m 0755 "${BIN_DIR}" "${CONFIG_DIR}" "${DATA_DIR}" "${LOG_DIR}" "${SCRIPT_DIR}"
+  install -d -m 0755 "${BIN_DIR}" "${CONFIG_DIR}" "${DATA_DIR}" "${LOG_DIR}" "${SCRIPT_DIR}" "${RELEASES_DIR}"
+  backup_existing_install
 
   log "Installing application binaries"
   install -m 0755 "${BUILD_DIR}/receiver_app" "${BIN_DIR}/receiver_app"
@@ -119,6 +154,9 @@ Next steps:
      sudo systemctl start ${SERVICE_NAME}.service
   5. Check status:
      sudo systemctl status ${SERVICE_NAME}.service
+  6. Roll back manually if needed:
+     ls -1 ${RELEASES_DIR}
+     cp -a ${RELEASES_DIR}/<timestamp>/bin/. ${BIN_DIR}/
 
 EOF
 }

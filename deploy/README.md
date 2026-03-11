@@ -1,30 +1,8 @@
-# QDGZ300 部署资产说明
+# QDGZ300 部署说明
 
-当前 `deploy/` 目录承载安装脚本、运行时配置模板和系统侧调优资产，和代码仓库中的正式构建/测试入口保持一致。
+## 1. 目录布局
 
-## 当前包含内容
-
-- `systemd/qdgz300-sysctl.service`
-- `systemd/nic-optimization.service`
-- `systemd/cpu-performance.service`
-- `systemd/qdgz300-receiver.service`
-- `sysctl/90-qdgz300.conf`
-- `receiver_config_example.yaml`
-- `install.sh`
-
-## 当前正式入口
-
-- 服务器原生构建：`bash scripts/build/build_production.sh`
-- WSL/Linux 交叉构建：`bash scripts/build/build_wsl_cross.sh`
-- 正式单测入口：`ctest --test-dir build_production/tests/unit --output-on-failure`
-
-## 安装方式
-
-```bash
-sudo bash deploy/install.sh build_production
-```
-
-默认安装布局：
+默认安装根目录固定为：
 
 ```text
 /opt/qdgz300_backend/
@@ -36,5 +14,85 @@ sudo bash deploy/install.sh build_production
 │   └── receiver.yaml.example
 ├── data/
 ├── logs/
-└── scripts/
+├── scripts/
+└── releases/
+    └── <timestamp>/
+```
+
+## 2. 资产对应关系
+
+systemd：
+
+- `deploy/systemd/qdgz300-receiver.service`
+- `deploy/systemd/qdgz300-sysctl.service`
+- `deploy/systemd/nic-optimization.service`
+- `deploy/systemd/cpu-performance.service`
+
+sysctl：
+
+- `deploy/sysctl/90-qdgz300.conf`
+
+运维脚本：
+
+- `scripts/ops/enable_services.sh`
+- `scripts/ops/start_services.sh`
+- `scripts/ops/stop_services.sh`
+- `scripts/ops/check_services.sh`
+- `scripts/ops/tail_logs.sh`
+
+## 3. 安装
+
+```bash
+bash scripts/build/build_production.sh
+sudo bash deploy/install.sh build_production
+sudo bash scripts/ops/enable_services.sh
+sudo bash scripts/ops/start_services.sh
+sudo bash scripts/ops/check_services.sh
+```
+
+## 4. 升级
+
+```bash
+git pull --ff-only
+bash scripts/build/build_production.sh
+sudo bash deploy/install.sh build_production
+sudo systemctl restart qdgz300-receiver.service
+```
+
+说明：
+
+- `deploy/install.sh` 在覆盖二进制前会把上一版 `bin/` 和 `config/` 备份到 `/opt/qdgz300_backend/releases/<timestamp>/`
+
+## 5. 回滚
+
+查看可回滚版本：
+
+```bash
+sudo ls -1 /opt/qdgz300_backend/releases
+```
+
+回滚二进制：
+
+```bash
+sudo cp -a /opt/qdgz300_backend/releases/<timestamp>/bin/. /opt/qdgz300_backend/bin/
+sudo systemctl restart qdgz300-receiver.service
+```
+
+如果需要回滚配置模板：
+
+```bash
+sudo cp -a /opt/qdgz300_backend/releases/<timestamp>/config/. /opt/qdgz300_backend/config/
+```
+
+## 6. 卸载
+
+```bash
+sudo bash deploy/uninstall.sh
+```
+
+## 7. 验收
+
+```bash
+sudo bash scripts/ops/check_services.sh
+sudo bash scripts/ops/tail_logs.sh
 ```
