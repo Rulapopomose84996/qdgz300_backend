@@ -20,10 +20,7 @@ qdgz300_backend/
 │   ├── common/
 │   ├── m01_receiver/
 │   ├── m02_signal_proc/
-│   ├── m03_data_proc/
-│   ├── m04_gateway/
-│   ├── control/
-│   └── towerguard/
+│   └── logging/
 ├── tests/
 │   ├── unit/
 │   └── integration/
@@ -94,8 +91,11 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 
 ## 部署资产
 
-当前部署目录主要包含系统侧调优资产：
+当前部署目录包含安装脚本、配置模板和系统侧调优资产：
 
+- `deploy/install.sh`
+- `deploy/receiver_config_example.yaml`
+- `deploy/systemd/qdgz300-receiver.service`
 - `deploy/systemd/qdgz300-sysctl.service`
 - `deploy/systemd/nic-optimization.service`
 - `deploy/systemd/cpu-performance.service`
@@ -105,9 +105,9 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 
 ## 当前状态
 
-- 已下沉模块：`common`、`m01_receiver`、`m02_signal_proc`、`m03_data_proc`、`m04_gateway`、`control`、`towerguard`
+- 已下沉模块：`common`、`m01_receiver`、`m02_signal_proc`
 - 已重组测试目录：`tests/unit`、`tests/integration`
-- M03 / M04 / control / towerguard 当前多数仍是占位模块，CMake 会在源码缺失时显式跳过
+- 尚未实现的 M03 / M04 / control / towerguard 已从当前构建装配中移除，避免持续产生配置期警告
 
 ## 入口文档
 

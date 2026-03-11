@@ -142,6 +142,23 @@ ctest --test-dir build_production/tests/integration --output-on-failure
 - `LD_LIBRARY_PATH` 需要包含 `/usr/local/corex/lib64:/usr/local/corex/lib`
 - 服务器原生构建脚本会在 `ENABLE_GPU=ON` 时主动补齐这两个环境变量
 
+### 4.5 当前安装入口
+
+```bash
+sudo bash deploy/install.sh build_production
+```
+
+默认安装目录：
+
+```text
+/opt/qdgz300_backend/
+├── bin/
+├── config/
+├── data/
+├── logs/
+└── scripts/
+```
+
 ---
 
 ## 5. 当前阶段的验收目标

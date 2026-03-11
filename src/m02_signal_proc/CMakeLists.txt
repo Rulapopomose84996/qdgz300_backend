@@ -6,7 +6,7 @@ set(M02_SOURCES
     signal_proc_metrics.cpp
 )
 
-if(ENABLE_GPU)
+if(ENABLE_GPU AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/signal_kernels.cu")
     list(APPEND M02_SOURCES signal_kernels.cu)
 endif()
 

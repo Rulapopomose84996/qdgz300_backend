@@ -69,31 +69,6 @@ add_subdirectory(src)
 # 可执行文件
 # ==============================================================================
 
-# --- 全系统主程序 ---
-if(EXISTS "${CMAKE_SOURCE_DIR}/src/main_backend.cpp"
-    AND TARGET qdgz300_m01
-    AND TARGET qdgz300_m02
-    AND TARGET qdgz300_m03
-    AND TARGET qdgz300_m04
-    AND TARGET qdgz300_control)
-    add_executable(qdgz300_backend src/main_backend.cpp)
-    target_link_libraries(qdgz300_backend PRIVATE
-        qdgz300_m01 qdgz300_m02 qdgz300_m03 qdgz300_m04 qdgz300_control
-    )
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        if(DL_LIBRARY)
-            target_link_libraries(qdgz300_backend PRIVATE ${DL_LIBRARY})
-        endif()
-
-        if(RT_LIBRARY)
-            target_link_libraries(qdgz300_backend PRIVATE ${RT_LIBRARY})
-        endif()
-    endif()
-else()
-    message(WARNING "Skipping executable qdgz300_backend: missing sources or dependent module targets.")
-endif()
-
 # --- 旧版 receiver_app (M01 standalone) ---
 add_executable(receiver_app src/m01_receiver/main.cpp)
 target_link_libraries(receiver_app PRIVATE receiver_core)
@@ -141,7 +116,7 @@ endif()
 # ==============================================================================
 set(QDGZ300_RUNTIME_INSTALL_TARGETS)
 
-foreach(_runtime_target qdgz300_backend receiver_app pcap_replay pcap_analyze)
+foreach(_runtime_target receiver_app pcap_replay pcap_analyze fpga_emulator)
     if(TARGET ${_runtime_target})
         list(APPEND QDGZ300_RUNTIME_INSTALL_TARGETS ${_runtime_target})
     endif()

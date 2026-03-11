@@ -1,0 +1,21 @@
+[Unit]
+Description=QDGZ300 Receiver Service
+After=network-online.target qdgz300-sysctl.service nic-optimization.service cpu-performance.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=qdgz300
+Group=qdgz300
+WorkingDirectory=/opt/qdgz300_backend
+Environment=LD_LIBRARY_PATH=/usr/local/corex/lib64:/usr/local/corex/lib
+ExecStart=/opt/qdgz300_backend/bin/receiver_app --config /opt/qdgz300_backend/config/receiver.yaml
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
