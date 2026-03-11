@@ -29,8 +29,8 @@ namespace qdgz300::m04
         CommandAck handle_command_for_test(const std::string &payload) const;
 
     private:
-        uint16_t port_{0};
-        HmiSessionManager &sessions_;
+        [[maybe_unused]] uint16_t port_{0};
+        [[maybe_unused]] HmiSessionManager &sessions_;
         CommandHandler handler_{};
         bool running_{false};
     };

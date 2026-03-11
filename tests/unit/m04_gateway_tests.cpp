@@ -68,7 +68,7 @@ TEST(M04SessionTest, MarksTimeoutSessionsDead)
     HmiSessionManager sessions;
     sessions.upsert(1, "peer-1", 100);
     sessions.upsert(2, "peer-2", 200);
-    sessions.sweep_timeouts(500, 250);
+    sessions.sweep_timeouts(430, 250);
 
     EXPECT_EQ(sessions.alive_count(), 1u);
 }
