@@ -51,27 +51,57 @@ namespace qdgz300
         /// @return true=直接入队成功, false=丢弃最旧元素后入队
         bool drop_oldest_push(const T &item) noexcept
         {
-            if (try_push(item))
-                return true;
-            // Drop oldest element to make room
-            drop_count_.fetch_add(1, std::memory_order_relaxed);
-            // Advance head (consumer side) — only safe in single-consumer context
-            const size_t head = head_.load(std::memory_order_relaxed);
-            head_.store((head + 1) & mask_, std::memory_order_release);
-            try_push(item);
-            return false;
+            bool dropped = false;
+            for (;;)
+            {
+                const size_t tail = tail_.load(std::memory_order_relaxed);
+                const size_t next = (tail + 1) & mask_;
+                size_t head = head_.load(std::memory_order_acquire);
+
+                if (next != head)
+                {
+                    buffer_[tail] = item;
+                    tail_.store(next, std::memory_order_release);
+                    return !dropped;
+                }
+
+                const size_t new_head = (head + 1) & mask_;
+                if (head_.compare_exchange_weak(head, new_head,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_acquire))
+                {
+                    drop_count_.fetch_add(1, std::memory_order_relaxed);
+                    dropped = true;
+                }
+            }
         }
 
         /// @return true=直接入队成功, false=丢弃最旧元素后入队
         bool drop_oldest_push(T &&item) noexcept
         {
-            if (try_push(std::move(item)))
-                return true;
-            drop_count_.fetch_add(1, std::memory_order_relaxed);
-            const size_t head = head_.load(std::memory_order_relaxed);
-            head_.store((head + 1) & mask_, std::memory_order_release);
-            try_push(std::move(item));
-            return false;
+            bool dropped = false;
+            for (;;)
+            {
+                const size_t tail = tail_.load(std::memory_order_relaxed);
+                const size_t next = (tail + 1) & mask_;
+                size_t head = head_.load(std::memory_order_acquire);
+
+                if (next != head)
+                {
+                    buffer_[tail] = std::move(item);
+                    tail_.store(next, std::memory_order_release);
+                    return !dropped;
+                }
+
+                const size_t new_head = (head + 1) & mask_;
+                if (head_.compare_exchange_weak(head, new_head,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_acquire))
+                {
+                    drop_count_.fetch_add(1, std::memory_order_relaxed);
+                    dropped = true;
+                }
+            }
         }
 
         std::optional<T> try_pop() noexcept

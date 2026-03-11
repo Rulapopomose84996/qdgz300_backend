@@ -88,11 +88,19 @@ namespace receiver
             {
                 logf(LogLevel::DEBUG, fmt, std::forward<Args>(args)...);
             }
+            void debug(const char *message)
+            {
+                log(LogLevel::DEBUG, message == nullptr ? std::string{} : std::string(message));
+            }
 
             template <typename... Args>
             void info(const char *fmt, Args &&...args)
             {
                 logf(LogLevel::INFO, fmt, std::forward<Args>(args)...);
+            }
+            void info(const char *message)
+            {
+                log(LogLevel::INFO, message == nullptr ? std::string{} : std::string(message));
             }
 
             template <typename... Args>
@@ -100,11 +108,19 @@ namespace receiver
             {
                 logf(LogLevel::WARN, fmt, std::forward<Args>(args)...);
             }
+            void warn(const char *message)
+            {
+                log(LogLevel::WARN, message == nullptr ? std::string{} : std::string(message));
+            }
 
             template <typename... Args>
             void error(const char *fmt, Args &&...args)
             {
                 logf(LogLevel::ERROR, fmt, std::forward<Args>(args)...);
+            }
+            void error(const char *message)
+            {
+                log(LogLevel::ERROR, message == nullptr ? std::string{} : std::string(message));
             }
 
             void flush();
@@ -119,12 +135,6 @@ namespace receiver
             template <typename... Args>
             void logf(LogLevel level, const char *fmt, Args &&...args)
             {
-                if constexpr (sizeof...(Args) == 0)
-                {
-                    log(level, fmt == nullptr ? std::string{} : std::string(fmt));
-                    return;
-                }
-
                 int size = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
                 if (size <= 0)
                 {
@@ -139,12 +149,6 @@ namespace receiver
             template <typename... Args>
             void logf_with_trace(LogLevel level, const char *trace_id, const char *fmt, Args &&...args)
             {
-                if constexpr (sizeof...(Args) == 0)
-                {
-                    log(level, fmt == nullptr ? std::string{} : std::string(fmt), trace_id);
-                    return;
-                }
-
                 int size = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
                 if (size <= 0)
                 {
