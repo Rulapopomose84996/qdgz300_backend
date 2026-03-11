@@ -1,0 +1,66 @@
+# Build artifacts
+build/
+bin/
+lib/
+build_*/
+*.o
+*.a
+*.so
+*.dylib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Visual Studio files (not supported, Linux ARM64 only)
+*.vcxproj
+*.vcxproj.filters
+*.sln
+*.suo
+*.user
+*.db
+.vs/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+!cmake/*.cmake
+!cmake/toolchains/*.cmake
+
+# Test artifacts
+Testing/
+CTestTestfile.cmake
+
+# Log files
+*.log
+
+# Coverage artifacts
+docs/api/
+reports/coverage/
+*.gcda
+*.gcno
+*.gcov
+coverage/
+coverage-*/
+*.info
+
+# Core dumps
+core
+core.*
+
+# Dependency artifacts
+.deps/
+.libs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+deps_offline/extracted/

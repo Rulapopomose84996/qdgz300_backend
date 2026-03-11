@@ -1,0 +1,62 @@
+# M01 Receiver 配置文件（精简版 - FPGA联调专用）
+# 协议版本: V3.1
+# 设计规范: M01_Receiver_Design.md
+# 注：仅处理PacketType=0x03(Data)和0x04(Heartbeat)
+
+# 网络配置（三阵面物理隔离模型）
+# 设计：三条光纤 → 网卡三网口 → 相同端口 + 不同IP地址
+network:
+  listen_port: 9999                # 统一监听端口（三阵面相同）
+  bind_ips:                        # 三阵面绑定不同IP地址（对应网卡三网口）
+    - "192.168.1.101"              # Array Face 1 -> enP1s25f0 (Intel X710 Port0)
+    - "192.168.2.101"              # Array Face 2 -> enP1s25f1 (Intel X710 Port1)
+    - "192.168.3.101"              # Array Face 3 -> enP1s25f2 (Intel X710 Port2)
+  recvmmsg_batch_size: 64         # recvmmsg批量接收大小
+  socket_rcvbuf_mb: 256           # Socket接收缓冲区（MB）
+  enable_ip_freebind: true        # 允许绑定到暂未配置在本机上的阵面IP，便于光口未全部拉起时保持三阵面配置
+  source_id_map: [0x11, 0x12, 0x13] # 三阵面对应DACS SourceID映射（兜底过滤）
+  cpu_affinity_map: [16, 17, 18]  # 三阵面接收线程绑核（CPU 16/17/18 @ Node1）
+  source_filter_enabled: true      # 启用SourceID兜底过滤（物理隔离失效时生效）
+  numa_node: 1                     # NUMA亲和节点（冻结：Node1）
+
+# 分片重组配置（M01 §5）
+reassembly:
+  timeout_ms: 100                  # 分片重组超时（毫秒），T_reasm=100ms
+  max_contexts: 1024               # 最大并发重组上下文数
+  max_total_frags: 1024            # 最大分片数限制（超限直接丢弃）
+  max_reasm_bytes_per_key: 16777216 # 单重组键最大累计负载字节数（16MiB）
+
+# 重排序配置（M01 §5 保留Reorderer）
+reorder:
+  window_size: 512                 # 序列号窗口大小
+  timeout_ms: 50                   # 等待超时（毫秒），T_reorder=50ms
+
+# 队列配置（M01 §7）
+queue:
+  rawcpi_q_capacity: 64            # RawCPI_Q SPSC队列容量（每阵面独立）
+  rawcpi_q_slot_size_mb: 2         # 单slot大小（MB）
+
+# 日志配置
+logging:
+  level: "DEBUG"                    # 日志级别：DEBUG | INFO | WARN | ERROR
+
+# 消费者桩配置（M01 §4.13）
+consumer:
+  print_summary: true              # 打印RawBlock摘要
+  write_to_file: false             # 写入二进制文件供离线验证
+  output_dir: "/tmp/receiver_rawblocks" # 输出目录
+  stats_interval_ms: 1000          # 统计输出间隔（毫秒）
+
+# 性能与拓扑约束（M01 §3）
+performance:
+  prefetch_hints_enabled: true     # 启用预取提示
+  qos_enabled: true                # 启用QoS优先级处理（心跳优先）
+  heartbeat_max_queue_depth: 1000  # 心跳队列最大深度
+
+# 已移除的配置项（联调阶段不需要）:
+# - timestamp: 移除TimestampHandler
+# - flow_control: 移除FlowController
+# - control_reliability: 仅处理Data+Heartbeat，无Control Plane
+# - monitoring: 移除Prometheus/Grafana依赖
+# - delivery: 输出替换为SPSC队列+消费者桩
+# - capture: 联调阶段降优先级，可选使用消费者桩落盘

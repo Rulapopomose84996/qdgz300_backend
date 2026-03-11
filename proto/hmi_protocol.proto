@@ -1,0 +1,186 @@
+// proto/hmi_protocol.proto
+// QDGZ300 HMI 显控协议 Protobuf 定义
+// 用于 M04 Gateway ↔ HMI 通信
+// 协议基于 V3.1 冻结定义
+
+syntax = "proto3";
+
+package qdgz300.hmi;
+
+option cc_enable_arenas = true;
+
+// ═══════════════════════════════════════════════════════
+//  TrackFrame — 航迹帧快照（M04 → HMI，周期推送）
+// ═══════════════════════════════════════════════════════
+
+message TrackFrame {
+    uint64 frame_seq           = 1; // 帧序号，单调递增
+    uint64 data_timestamp_ns   = 2; // 数据时间戳 (ns, UTC epoch)
+    uint64 backend_instance_id = 3; // 后端实例 ID
+    ClockDomain clock_domain   = 4; // 时间域标识
+    uint32 coverage_mask       = 5; // 3-bit 阵面覆盖位图
+    uint32 system_quality_flags = 6; // 系统质量标志位
+    bool is_truncated          = 7; // UDP 输出时是否被截断
+    uint32 dropped_count       = 8; // 截断时被丢弃的航迹数
+    repeated Track tracks      = 9; // 本帧航迹列表
+}
+
+message Track {
+    uint64 track_id             = 1; // 全局唯一 ID，单调递增不复用
+    double pos_x                = 2; // 位置 X (m, 本地坐标系)
+    double pos_y                = 3; // 位置 Y (m)
+    double pos_z                = 4; // 位置 Z (m)
+    double vel_x                = 5; // 速度 X (m/s)
+    double vel_y                = 6; // 速度 Y (m/s)
+    double vel_z                = 7; // 速度 Z (m/s)
+    double heading_deg          = 8; // 航向 (°)
+    float confidence            = 9; // 置信度 [0, 1]
+    TrackLifecycle lifecycle    = 10; // 生命周期状态
+    uint32 source_array_id      = 11; // 当前数据来源阵面
+    bool handover_flag          = 12; // 是否为接力航迹
+    uint32 handover_from        = 13; // 接力来源阵面（若有）
+    uint32 coast_frames         = 14; // 连续 coast 帧数
+    uint64 create_ts            = 15; // 航迹创建时间戳 (ns)
+    uint64 update_ts            = 16; // 最近更新时间戳 (ns)
+}
+
+// ═══════════════════════════════════════════════════════
+//  Command — HMI → 后端 控制命令
+// ═══════════════════════════════════════════════════════
+
+message Command {
+    uint64 command_id        = 1; // 命令唯一 ID
+    uint64 timestamp_ns      = 2; // 命令发送时间戳
+    CommandType type          = 3; // 命令类型
+    uint32 control_epoch      = 4; // 控制纪元（防止旧 epoch 命令被执行）
+    bytes payload             = 5; // 命令载荷（类型相关）
+}
+
+message CommandAck {
+    uint64 command_id        = 1; // 对应的命令 ID
+    uint64 timestamp_ns      = 2; // ACK 时间戳
+    bool success             = 3; // 是否成功
+    uint32 error_code        = 4; // 错误码（0=成功）
+    string error_message     = 5; // 错误描述
+}
+
+// ═══════════════════════════════════════════════════════
+//  StateSnapshot — 状态快照（后端 → HMI，应答/周期）
+// ═══════════════════════════════════════════════════════
+
+message StateSnapshot {
+    uint64 snapshot_seq       = 1; // 快照序号
+    uint64 timestamp_ns       = 2; // 时间戳
+    SystemState system_state  = 3; // 当前系统状态
+    uint64 run_id             = 4; // 运行实例 ID
+
+    // 模块健康状态
+    ModuleHealth m01_health   = 5;
+    ModuleHealth m02_health   = 6;
+    ModuleHealth m03_health   = 7;
+    ModuleHealth m04_health   = 8;
+
+    // 关键指标摘要
+    MetricsSummary metrics    = 9;
+
+    // 最近告警事件
+    repeated AlertEvent recent_alerts = 10;
+
+    // 配置版本
+    uint64 config_version     = 11;
+}
+
+message ModuleHealth {
+    string module_name        = 1;
+    bool is_alive             = 2;
+    uint64 last_heartbeat_ns  = 3;
+    uint32 error_count        = 4;
+    float cpu_usage_percent   = 5;
+    uint64 memory_used_bytes  = 6;
+}
+
+message MetricsSummary {
+    // M01
+    uint64 m01_packets_received    = 1;
+    uint64 m01_packets_dropped     = 2;
+    uint64 m01_reasm_completed     = 3;
+    uint64 m01_reasm_timeouts      = 4;
+
+    // M02
+    uint64 m02_frames_processed    = 5;
+    uint64 m02_gpu_timeouts        = 6;
+    float  m02_avg_gpu_latency_ms  = 7;
+
+    // M03
+    uint64 m03_tracks_active       = 8;
+    uint64 m03_tracks_created      = 9;
+    uint64 m03_tracks_deleted      = 10;
+    uint64 m03_handovers           = 11;
+
+    // M04
+    uint64 m04_frames_sent         = 12;
+    uint64 m04_frames_dropped      = 13;
+    uint32 m04_hmi_connections     = 14;
+}
+
+message AlertEvent {
+    uint64 timestamp_ns       = 1;
+    string domain             = 2; // EventDomain 名称
+    string severity           = 3; // "SEV-1" / "SEV-2" / "SEV-3"
+    string source_module      = 4;
+    string event_code         = 5;
+    string message            = 6;
+    string detail_json        = 7; // 附加 JSON 明细
+}
+
+// ═══════════════════════════════════════════════════════
+//  Heartbeat — HMI 连接心跳
+// ═══════════════════════════════════════════════════════
+
+message HmiPing {
+    uint64 ping_id           = 1;
+    uint64 timestamp_ns      = 2;
+}
+
+message HmiPong {
+    uint64 ping_id           = 1; // 对应的 ping ID
+    uint64 timestamp_ns      = 2;
+    SystemState system_state = 3; // 附带当前系统状态
+}
+
+// ═══════════════════════════════════════════════════════
+//  枚举定义
+// ═══════════════════════════════════════════════════════
+
+enum SystemState {
+    STATE_INIT     = 0;
+    STATE_STANDBY  = 1;
+    STATE_RUNNING  = 2;
+    STATE_DEGRADED = 3;
+    STATE_FAULT    = 4;
+}
+
+enum TrackLifecycle {
+    TRACK_TENTATIVE = 0;
+    TRACK_CONFIRMED = 1;
+    TRACK_COASTING  = 2;
+    TRACK_LOST      = 3;
+    TRACK_DELETED   = 4;
+}
+
+enum ClockDomain {
+    CLOCK_AUTHORITATIVE = 0;
+    CLOCK_HOLDOVER      = 1;
+    CLOCK_APPROXIMATE   = 2;
+}
+
+enum CommandType {
+    CMD_UNKNOWN         = 0;
+    CMD_START           = 1; // 开始运行
+    CMD_STOP            = 2; // 停止运行
+    CMD_RESET           = 3; // 复位
+    CMD_CONFIG_UPDATE   = 4; // 动态配置更新
+    CMD_RECORDING_START = 5; // 开始录制
+    CMD_RECORDING_STOP  = 6; // 停止录制
+    CMD_QUERY_STATE     = 7; // 查询状态
+}

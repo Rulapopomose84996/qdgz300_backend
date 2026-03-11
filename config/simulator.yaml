@@ -1,0 +1,15 @@
+simulator:
+  target_ip: "127.0.0.1"
+  target_port: 9999
+  mode: "mixed"
+  pps: 50000
+  duration_seconds: 60
+  loss_rate: 0.0
+  reorder_rate: 0.0
+  data:
+    total_frags_range: [1, 16]
+    frame_counter_start: 0
+  control:
+    beams_per_frame: 4
+  heartbeat:
+    interval_ms: 1000

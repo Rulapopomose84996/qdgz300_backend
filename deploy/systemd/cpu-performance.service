@@ -1,0 +1,12 @@
+[Unit]
+Description=QDGZ300 data-plane CPU governor pinning
+After=multi-user.target
+After=nic-optimization.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cpu-performance.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

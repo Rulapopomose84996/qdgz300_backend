@@ -1,0 +1,41 @@
+# M01 Receiver 单阵面本机自发自收配置
+# 用途：
+# - 仅启用 1 个阵面接收线程
+# - 绑定到本机真实接收口 IP
+# - 与本机另一张网口发包配合，避免三阵面和同机回环干扰分析
+
+network:
+  listen_port: 9999
+  bind_ip: "192.168.1.101"          # 接收口：enP1s25f0
+  recvmmsg_batch_size: 64
+  socket_rcvbuf_mb: 256
+  enable_ip_freebind: false
+  source_filter_enabled: false      # 本机联调先关闭源过滤，聚焦收包性能
+
+reassembly:
+  timeout_ms: 100
+  max_contexts: 1024
+  max_total_frags: 1024
+  max_reasm_bytes_per_key: 16777216
+
+reorder:
+  window_size: 512
+  timeout_ms: 50
+
+queue:
+  rawcpi_q_capacity: 64
+  rawcpi_q_slot_size_mb: 2
+
+logging:
+  level: "INFO"
+
+consumer:
+  print_summary: false
+  write_to_file: false
+  output_dir: "/tmp/receiver_rawblocks"
+  stats_interval_ms: 1000
+
+performance:
+  prefetch_hints_enabled: true
+  qos_enabled: true
+  heartbeat_max_queue_depth: 1000

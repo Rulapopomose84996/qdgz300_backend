@@ -1,0 +1,16 @@
+[Unit]
+Description=QDGZ300 NIC performance tuning
+Wants=network-online.target
+After=network-online.target
+After=NetworkManager.service
+After=firewalld.service
+After=iluvatar-node-init.service
+Before=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nic-tuning.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

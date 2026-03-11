@@ -1,0 +1,12 @@
+[Unit]
+Description=QDGZ300 sysctl override reapply
+After=systemd-sysctl.service
+Before=nic-optimization.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/sysctl -p /etc/sysctl.d/90-qdgz300.conf
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

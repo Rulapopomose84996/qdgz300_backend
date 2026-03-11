@@ -1,0 +1,124 @@
+﻿// tests/common_error_codes_tests.cpp
+// ErrorCode 枚举 + error_name() 测试
+#include <gtest/gtest.h>
+#include "qdgz300/common/error_codes.h"
+
+using namespace qdgz300;
+
+TEST(ErrorCodesTest, OkIsZero)
+{
+    EXPECT_EQ(static_cast<uint32_t>(ErrorCode::OK), 0u);
+    EXPECT_EQ(error_name(ErrorCode::OK), "OK");
+}
+
+TEST(ErrorCodesTest, M01ReceiverCodes)
+{
+    EXPECT_EQ(error_name(ErrorCode::RECV_SOCKET_INIT_FAILED), "RECV_SOCKET_INIT_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::RECV_BIND_FAILED), "RECV_BIND_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::RECV_AFFINITY_MISMATCH), "RECV_AFFINITY_MISMATCH");
+    EXPECT_EQ(error_name(ErrorCode::RECV_MAGIC_MISMATCH), "RECV_MAGIC_MISMATCH");
+    EXPECT_EQ(error_name(ErrorCode::RECV_VERSION_MISMATCH), "RECV_VERSION_MISMATCH");
+    EXPECT_EQ(error_name(ErrorCode::RECV_CRC_FAILED), "RECV_CRC_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::RECV_REASM_TIMEOUT), "RECV_REASM_TIMEOUT");
+    EXPECT_EQ(error_name(ErrorCode::RECV_QUEUE_FULL), "RECV_QUEUE_FULL");
+    EXPECT_EQ(error_name(ErrorCode::RECV_MEMORY_POOL_EXHAUSTED), "RECV_MEMORY_POOL_EXHAUSTED");
+}
+
+TEST(ErrorCodesTest, M02GpuCodes)
+{
+    EXPECT_EQ(error_name(ErrorCode::GPU_STREAM_INIT_FAILED), "GPU_STREAM_INIT_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::GPU_COMPUTE_TIMEOUT), "GPU_COMPUTE_TIMEOUT");
+    EXPECT_EQ(error_name(ErrorCode::GPU_COMPUTE_TIMEOUT_PERSISTENT), "GPU_COMPUTE_TIMEOUT_PERSISTENT");
+    EXPECT_EQ(error_name(ErrorCode::GPU_PINNED_ALLOC_FAILED), "GPU_PINNED_ALLOC_FAILED");
+}
+
+TEST(ErrorCodesTest, M03DataProcCodes)
+{
+    EXPECT_EQ(error_name(ErrorCode::TRACK_ASSOCIATION_FAILED), "TRACK_ASSOCIATION_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::TRACK_ID_OVERFLOW), "TRACK_ID_OVERFLOW");
+    EXPECT_EQ(error_name(ErrorCode::FUSION_HANDOVER_FAILED), "FUSION_HANDOVER_FAILED");
+}
+
+TEST(ErrorCodesTest, M04GatewayCodes)
+{
+    EXPECT_EQ(error_name(ErrorCode::GW_TCP_BIND_FAILED), "GW_TCP_BIND_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::GW_SERIALIZE_FAILED), "GW_SERIALIZE_FAILED");
+    EXPECT_EQ(error_name(ErrorCode::GW_TRUNCATED), "GW_TRUNCATED");
+    EXPECT_EQ(error_name(ErrorCode::GW_OUTPUT_QUEUE_FULL), "GW_OUTPUT_QUEUE_FULL");
+}
+
+TEST(ErrorCodesTest, OrchestratorCodes)
+{
+    EXPECT_EQ(error_name(ErrorCode::ORC_INVALID_TRANSITION), "ORC_INVALID_TRANSITION");
+    EXPECT_EQ(error_name(ErrorCode::ORC_COMMAND_BRIDGE_TIMEOUT), "ORC_COMMAND_BRIDGE_TIMEOUT");
+}
+
+TEST(ErrorCodesTest, SystemCodes)
+{
+    EXPECT_EQ(error_name(ErrorCode::MEMORY_POOL_EXHAUSTED), "MEMORY_POOL_EXHAUSTED");
+    EXPECT_EQ(error_name(ErrorCode::QUEUE_OVERFLOW_PERSISTENT), "QUEUE_OVERFLOW_PERSISTENT");
+    EXPECT_EQ(error_name(ErrorCode::INPUT_SENSOR_MISSING), "INPUT_SENSOR_MISSING");
+}
+
+TEST(ErrorCodesTest, AllCodesHaveNames)
+{
+    // 验证所有已定义的错误码都有对应的名称（非 "UNKNOWN"）
+    auto check = [](ErrorCode code, const char *name)
+    {
+        auto actual = error_name(code);
+        EXPECT_NE(actual, "UNKNOWN") << name << " should have a defined name";
+        EXPECT_NE(actual.empty(), true) << name << " should not be empty";
+    };
+
+    check(ErrorCode::OK, "OK");
+    check(ErrorCode::RECV_SOCKET_INIT_FAILED, "RECV_SOCKET_INIT_FAILED");
+    check(ErrorCode::RECV_BIND_FAILED, "RECV_BIND_FAILED");
+    check(ErrorCode::RECV_AFFINITY_MISMATCH, "RECV_AFFINITY_MISMATCH");
+    check(ErrorCode::RECV_MAGIC_MISMATCH, "RECV_MAGIC_MISMATCH");
+    check(ErrorCode::RECV_VERSION_MISMATCH, "RECV_VERSION_MISMATCH");
+    check(ErrorCode::RECV_PACKET_TYPE_UNKNOWN, "RECV_PACKET_TYPE_UNKNOWN");
+    check(ErrorCode::RECV_PAYLOAD_LEN_MISMATCH, "RECV_PAYLOAD_LEN_MISMATCH");
+    check(ErrorCode::RECV_SOURCE_ID_INVALID, "RECV_SOURCE_ID_INVALID");
+    check(ErrorCode::RECV_CRC_FAILED, "RECV_CRC_FAILED");
+    check(ErrorCode::RECV_REASM_TIMEOUT, "RECV_REASM_TIMEOUT");
+    check(ErrorCode::RECV_REASM_OVERSIZE, "RECV_REASM_OVERSIZE");
+    check(ErrorCode::RECV_REASM_TOTALFRAGS_EXCEED, "RECV_REASM_TOTALFRAGS_EXCEED");
+    check(ErrorCode::RECV_LATE_FRAGMENT, "RECV_LATE_FRAGMENT");
+    check(ErrorCode::RECV_DUPLICATE_FRAGMENT, "RECV_DUPLICATE_FRAGMENT");
+    check(ErrorCode::RECV_QUEUE_FULL, "RECV_QUEUE_FULL");
+    check(ErrorCode::RECV_MEMORY_POOL_EXHAUSTED, "RECV_MEMORY_POOL_EXHAUSTED");
+    check(ErrorCode::GPU_STREAM_INIT_FAILED, "GPU_STREAM_INIT_FAILED");
+    check(ErrorCode::GPU_H2D_FAILED, "GPU_H2D_FAILED");
+    check(ErrorCode::GPU_KERNEL_LAUNCH_FAILED, "GPU_KERNEL_LAUNCH_FAILED");
+    check(ErrorCode::GPU_D2H_FAILED, "GPU_D2H_FAILED");
+    check(ErrorCode::GPU_COMPUTE_TIMEOUT, "GPU_COMPUTE_TIMEOUT");
+    check(ErrorCode::GPU_COMPUTE_TIMEOUT_PERSISTENT, "GPU_COMPUTE_TIMEOUT_PERSISTENT");
+    check(ErrorCode::GPU_PINNED_ALLOC_FAILED, "GPU_PINNED_ALLOC_FAILED");
+    check(ErrorCode::TRACK_ASSOCIATION_FAILED, "TRACK_ASSOCIATION_FAILED");
+    check(ErrorCode::TRACK_ID_OVERFLOW, "TRACK_ID_OVERFLOW");
+    check(ErrorCode::FUSION_HANDOVER_FAILED, "FUSION_HANDOVER_FAILED");
+    check(ErrorCode::GW_TCP_BIND_FAILED, "GW_TCP_BIND_FAILED");
+    check(ErrorCode::GW_TCP_ACCEPT_FAILED, "GW_TCP_ACCEPT_FAILED");
+    check(ErrorCode::GW_HANDSHAKE_FAILED, "GW_HANDSHAKE_FAILED");
+    check(ErrorCode::GW_SERIALIZE_FAILED, "GW_SERIALIZE_FAILED");
+    check(ErrorCode::GW_TRUNCATED, "GW_TRUNCATED");
+    check(ErrorCode::GW_UDP_SEND_FAILED, "GW_UDP_SEND_FAILED");
+    check(ErrorCode::GW_OUTPUT_QUEUE_FULL, "GW_OUTPUT_QUEUE_FULL");
+    check(ErrorCode::ORC_INVALID_TRANSITION, "ORC_INVALID_TRANSITION");
+    check(ErrorCode::ORC_TRANSITION_TOO_FAST, "ORC_TRANSITION_TOO_FAST");
+    check(ErrorCode::ORC_COMMAND_BRIDGE_TIMEOUT, "ORC_COMMAND_BRIDGE_TIMEOUT");
+    check(ErrorCode::ORC_COMMAND_BRIDGE_MAX_RETRY, "ORC_COMMAND_BRIDGE_MAX_RETRY");
+    check(ErrorCode::ORC_EVENT_THROTTLED, "ORC_EVENT_THROTTLED");
+    check(ErrorCode::CFG_VALIDATION_FAILED, "CFG_VALIDATION_FAILED");
+    check(ErrorCode::CFG_FROZEN_PARAM_MODIFIED, "CFG_FROZEN_PARAM_MODIFIED");
+    check(ErrorCode::CFG_SNAPSHOT_VERSION_CONFLICT, "CFG_SNAPSHOT_VERSION_CONFLICT");
+    check(ErrorCode::TIME_SYNC_LOST, "TIME_SYNC_LOST");
+    check(ErrorCode::TIME_HOLDOVER_EXPIRED, "TIME_HOLDOVER_EXPIRED");
+    check(ErrorCode::HEALTH_BOOT_CHECK_FAILED, "HEALTH_BOOT_CHECK_FAILED");
+    check(ErrorCode::HEALTH_WARMUP_TIMEOUT, "HEALTH_WARMUP_TIMEOUT");
+    check(ErrorCode::HEALTH_RUNTIME_ANOMALY, "HEALTH_RUNTIME_ANOMALY");
+    check(ErrorCode::MEMORY_POOL_EXHAUSTED, "MEMORY_POOL_EXHAUSTED");
+    check(ErrorCode::QUEUE_OVERFLOW_PERSISTENT, "QUEUE_OVERFLOW_PERSISTENT");
+    check(ErrorCode::INPUT_SENSOR_MISSING, "INPUT_SENSOR_MISSING");
+    check(ErrorCode::REASM_TIMEOUT_VIOLATION, "REASM_TIMEOUT_VIOLATION");
+}

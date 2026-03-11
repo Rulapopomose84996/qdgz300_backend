@@ -1,0 +1,2 @@
+# Backward-compatible alias.
+include("${CMAKE_CURRENT_LIST_DIR}/aarch64-linux.cmake")
