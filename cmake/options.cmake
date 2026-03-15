@@ -20,4 +20,24 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(WARNING "This project is designed for Linux. Current system: ${CMAKE_SYSTEM_NAME}")
 endif()
 
-set(DEPS_OFFLINE_ROOT "${CMAKE_SOURCE_DIR}/deps_offline/extracted" CACHE PATH "Extracted offline dependency root")
+if(WIN32)
+    set(_qdgz300_default_cache_root "D:/WorkSpace/ThirdPartyCache/${PROJECT_NAME}")
+    set(_qdgz300_default_deps_root "${_qdgz300_default_cache_root}/build/windows-x64")
+elseif(CMAKE_CROSSCOMPILING)
+    set(_qdgz300_default_cache_root "/mnt/d/WorkSpace/ThirdPartyCache/${PROJECT_NAME}")
+    set(_qdgz300_default_deps_root "${_qdgz300_default_cache_root}/build/wsl-aarch64")
+else()
+    set(_qdgz300_default_cache_root "/home/devuser/WorkSpace/ThirdPartyCache/${PROJECT_NAME}")
+    set(_qdgz300_default_deps_root "${_qdgz300_default_cache_root}/build/native-aarch64")
+endif()
+
+set(QDGZ300_THIRD_PARTY_CACHE_ROOT "${_qdgz300_default_cache_root}" CACHE PATH
+    "Shared third-party cache root")
+set(QDGZ300_OFFLINE_DEPS_DIR "${QDGZ300_THIRD_PARTY_CACHE_ROOT}/archives" CACHE PATH
+    "Shared offline dependency archive directory")
+set(QDGZ300_DEPS_ROOT "${_qdgz300_default_deps_root}" CACHE PATH
+    "Shared dependency cache workspace")
+set(QDGZ300_DEPS_PREFIX "${QDGZ300_DEPS_ROOT}/prefix" CACHE PATH
+    "Shared dependency prefix directory")
+set(DEPS_OFFLINE_ROOT "" CACHE PATH
+    "Legacy extracted offline dependency root. Leave empty to disable project-local fallback")

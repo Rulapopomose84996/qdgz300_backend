@@ -10,6 +10,8 @@ Usage:
 Environment:
   QDGZ300_BUILD_DIR       Build output directory (default: build_wsl_cross_dev)
   QDGZ300_TOOLCHAIN_FILE  Toolchain file path
+  QDGZ300_OFFLINE_DEPS_DIR Shared offline archive directory
+  QDGZ300_DEPS_ROOT       Shared dependency cache root
   QDGZ300_BUILD_TYPE      CMake build type (default: Debug)
   QDGZ300_BUILD_TESTING   ON/OFF (default: ON)
   QDGZ300_RUN_TESTS       ON/OFF (default: OFF)
@@ -25,6 +27,9 @@ EOF
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="${QDGZ300_BUILD_DIR:-${ROOT_DIR}/build_wsl_cross_dev}"
 TOOLCHAIN_FILE="${QDGZ300_TOOLCHAIN_FILE:-${ROOT_DIR}/cmake/toolchains/aarch64-linux-gnu.cmake}"
+OFFLINE_DEPS_DIR="${QDGZ300_OFFLINE_DEPS_DIR:-/mnt/d/WorkSpace/ThirdPartyCache/qdgz300_backend/archives}"
+DEPS_ROOT="${QDGZ300_DEPS_ROOT:-/mnt/d/WorkSpace/ThirdPartyCache/qdgz300_backend/build/wsl-aarch64}"
+DEPS_PREFIX="${QDGZ300_DEPS_PREFIX:-${DEPS_ROOT}/prefix}"
 BUILD_TYPE="${QDGZ300_BUILD_TYPE:-Debug}"
 BUILD_TESTING="${QDGZ300_BUILD_TESTING:-ON}"
 RUN_TESTS="${QDGZ300_RUN_TESTS:-OFF}"
@@ -47,7 +52,7 @@ check_command() {
   command -v "$1" >/dev/null 2>&1 || die "Missing command: $1"
 }
 
-log "Step 1/4: Validate WSL/Linux cross build environment"
+log "Step 1/5: Validate WSL/Linux cross build environment"
 [[ "$(uname -s)" == "Linux" ]] || die "This script must run in Linux/WSL."
 check_command cmake
 check_command ninja
@@ -55,23 +60,33 @@ check_command aarch64-linux-gnu-gcc
 check_command aarch64-linux-gnu-g++
 [[ -f "${TOOLCHAIN_FILE}" ]] || die "Toolchain file not found: ${TOOLCHAIN_FILE}"
 
-log "Step 2/4: Configure cross build"
+log "Step 2/5: Prepare shared dependency cache"
+QDGZ300_OFFLINE_DEPS_DIR="${OFFLINE_DEPS_DIR}" \
+QDGZ300_DEPS_ROOT="${DEPS_ROOT}" \
+QDGZ300_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" \
+QDGZ300_BUILD_TYPE="${BUILD_TYPE}" \
+bash "${ROOT_DIR}/scripts/prepare_wsl_cross_deps.sh"
+
+log "Step 3/5: Configure cross build"
 cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" \
   -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DBUILD_TESTING="${BUILD_TESTING}" \
   -DBUILD_SIMULATOR="${BUILD_SIMULATOR}" \
   -DENABLE_GPU="${ENABLE_GPU}" \
-  -DENABLE_PROTOBUF="${ENABLE_PROTOBUF}"
+  -DENABLE_PROTOBUF="${ENABLE_PROTOBUF}" \
+  -DQDGZ300_OFFLINE_DEPS_DIR="${OFFLINE_DEPS_DIR}" \
+  -DQDGZ300_DEPS_ROOT="${DEPS_ROOT}" \
+  -DQDGZ300_DEPS_PREFIX="${DEPS_PREFIX}"
 
-log "Step 3/4: Build"
+log "Step 4/5: Build"
 if [[ -n "${BUILD_TARGET}" ]]; then
   cmake --build "${BUILD_DIR}" --target "${BUILD_TARGET}"
 else
   cmake --build "${BUILD_DIR}"
 fi
 
-log "Step 4/4: Run unit tests"
+log "Step 5/5: Run unit tests"
 if [[ "${RUN_TESTS}" == "ON" && "${BUILD_TESTING}" == "ON" ]]; then
   ctest_cmd=(ctest --test-dir "${BUILD_DIR}/tests/unit" --output-on-failure)
   if [[ -n "${TEST_REGEX}" ]]; then

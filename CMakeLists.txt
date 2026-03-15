@@ -12,6 +12,7 @@ include(cmake/warnings.cmake)
 qdgz300_enable_global_warnings()
 include(cmake/CompilerOptions.cmake OPTIONAL)
 include(cmake/third_party.cmake)
+find_package(Threads REQUIRED)
 
 function(qdgz300_collect_existing_sources out_var)
     set(_existing_sources)
@@ -39,5 +40,4 @@ add_subdirectory(tools)
 
 if(QDGZ300_BUILD_TESTING)
     add_subdirectory(tests)
-    add_subdirectory(tools/benchmarks)
 endif()

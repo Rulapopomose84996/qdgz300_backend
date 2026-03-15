@@ -1,5 +1,29 @@
 # QDGZ300 Backend
 
+## WSL 交叉编译共享缓存
+
+默认共享缓存目录：
+
+- 离线压缩包：`D:\WorkSpace\ThirdPartyCache\qdgz300_backend\archives`
+- WSL 依赖缓存：`D:\WorkSpace\ThirdPartyCache\qdgz300_backend\build\wsl-aarch64`
+- WSL 共享前缀目录：`D:\WorkSpace\ThirdPartyCache\qdgz300_backend\build\wsl-aarch64\prefix`
+
+在 WSL 中准备共享缓存并交叉编译：
+
+```bash
+cd /mnt/d/Workspace/Company/Tower/qdgz300_backend
+bash scripts/prepare_wsl_cross_deps.sh
+```
+
+完整交叉构建：
+
+```bash
+cd /mnt/d/Workspace/Company/Tower/qdgz300_backend
+bash scripts/build/build_wsl_cross.sh
+```
+
+离线包保留在 Windows 盘，WSL 通过 `/mnt/d/WorkSpace/ThirdPartyCache/qdgz300_backend/archives` 访问；项目不会做本地 Windows 原生编译。
+
 ## 构建
 
 服务器原生构建：
@@ -13,6 +37,8 @@ WSL / Linux 交叉构建：
 ```bash
 bash scripts/build/build_wsl_cross.sh
 ```
+
+构建脚本现在优先使用共享 `QDGZ300_DEPS_PREFIX`，仓库内 `deps_offline/` 不再作为默认依赖来源；仅在手动指定 `DEPS_OFFLINE_ROOT` 时作为兜底。
 
 ## 测试
 
