@@ -135,11 +135,7 @@ fi
 
 log "Step 5/5: Run unit tests"
 if [[ "${RUN_TESTS}" == "ON" && "${BUILD_TESTING}" == "ON" ]]; then
-  ctest_cmd=(ctest --test-dir "${BUILD_DIR}/tests/unit" --output-on-failure)
-  if [[ -n "${TEST_REGEX}" ]]; then
-    ctest_cmd+=(-R "${TEST_REGEX}")
-  fi
-  "${ctest_cmd[@]}"
+  QDGZ300_TEST_REGEX="${TEST_REGEX}" bash "${ROOT_DIR}/scripts/test/test_unit.sh" "${BUILD_DIR}"
 else
   log "Tests skipped; set QDGZ300_RUN_TESTS=ON and QDGZ300_BUILD_TESTING=ON to execute unit tests"
 fi
