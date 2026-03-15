@@ -113,7 +113,7 @@ namespace qdgz300
             }
             T item = std::move(buffer_[head]);
             head_.store((head + 1) & mask_, std::memory_order_release);
-            return std::move(item);
+            return item;
         }
 
         size_t size() const noexcept
