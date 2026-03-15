@@ -72,19 +72,27 @@
 
 ### 3.2 依赖原则
 
-- 优先使用 `deps_offline/` 中的离线依赖
+- 优先使用共享离线包目录：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/archives`
+- 优先使用共享依赖缓存目录：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/build/native-aarch64`
+- 仓库内 `deps_offline/` 不再作为默认构建来源
 - 不把公网拉包作为服务器构建前提
 - GPU 模块的 CoreX 头文件和库路径显式注入，不依赖隐式环境碰运气
 
 ### 3.3 测试原则
 
-- 测试目录要重构为：
+- 测试目录固定为：
   - `tests/unit`
   - `tests/integration`
-- 正式测试入口固定为：
+- 正式单元测试入口固定为：
 
 ```bash
-ctest --test-dir build_production/tests/unit --output-on-failure
+bash scripts/test/test_unit.sh build_production
+```
+
+- 正式集成测试入口固定为：
+
+```bash
+bash scripts/test/test_integration.sh build_production
 ```
 
 ### 3.4 运行时目录原则
@@ -109,7 +117,9 @@ bash scripts/build/build_production.sh
 - 构建类型：`Release`
 - 编译器：`/usr/local/corex/bin/clang`、`/usr/local/corex/bin/clang++`
 - GPU 开关：`ENABLE_GPU=ON`
-- 正式单测入口：`build_production/tests/unit`
+- 共享离线包目录：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/archives`
+- 共享原生缓存目录：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/build/native-aarch64`
+- 正式单测入口：`scripts/test/test_unit.sh build_production`
 
 ### 4.2 WSL / Linux 交叉构建
 
@@ -122,18 +132,20 @@ bash scripts/build/build_wsl_cross.sh
 - 构建目录：`build_wsl_cross_dev`
 - 工具链：`cmake/toolchains/aarch64-linux-gnu.cmake`
 - GPU 开关：默认 `OFF`
-- 正式单测入口：`build_wsl_cross_dev/tests/unit`
+- 共享离线包目录：`/mnt/d/WorkSpace/ThirdPartyCache/qdgz300_backend/archives`
+- 共享交叉缓存目录：`/mnt/d/WorkSpace/ThirdPartyCache/qdgz300_backend/build/wsl-aarch64`
+- 正式单测入口：`scripts/test/test_unit.sh build_wsl_cross_dev`
 
 ### 4.3 正式测试入口
 
 ```bash
-ctest --test-dir build_production/tests/unit --output-on-failure
+bash scripts/test/test_unit.sh build_production
 ```
 
 集成测试入口：
 
 ```bash
-ctest --test-dir build_production/tests/integration --output-on-failure
+bash scripts/test/test_integration.sh build_production
 ```
 
 ### 4.4 CoreX 环境约束
@@ -159,7 +171,23 @@ sudo bash deploy/install.sh build_production
 └── scripts/
 ```
 
-### 4.6 已验证的 systemd 启停链路
+### 4.6 当前共享缓存入口
+
+服务器原生依赖缓存准备：
+
+```bash
+cd /home/devuser/WorkSpace/qdgz300_backend
+bash scripts/prepare_native_deps.sh
+```
+
+WSL 交叉依赖缓存准备：
+
+```bash
+cd /mnt/d/Workspace/Company/Tower/qdgz300_backend
+bash scripts/prepare_wsl_cross_deps.sh
+```
+
+### 4.7 已验证的 systemd 启停链路
 
 已在服务器上验证通过的服务：
 
