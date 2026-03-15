@@ -9,6 +9,8 @@ Usage:
 
 Environment:
   QDGZ300_BUILD_DIR       Build output directory (default: build_production)
+  QDGZ300_OFFLINE_DEPS_DIR Shared offline archive directory
+  QDGZ300_DEPS_ROOT       Shared dependency cache root
   QDGZ300_BUILD_TYPE      CMake build type (default: Release)
   QDGZ300_BUILD_TESTING   ON/OFF (default: ON)
   QDGZ300_RUN_TESTS       ON/OFF (default: ON)
@@ -23,6 +25,9 @@ EOF
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="${QDGZ300_BUILD_DIR:-${ROOT_DIR}/build_production}"
+OFFLINE_DEPS_DIR="${QDGZ300_OFFLINE_DEPS_DIR:-/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/archives}"
+DEPS_ROOT="${QDGZ300_DEPS_ROOT:-/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/build/native-aarch64}"
+DEPS_PREFIX="${QDGZ300_DEPS_PREFIX:-${DEPS_ROOT}/prefix}"
 BUILD_TYPE="${QDGZ300_BUILD_TYPE:-Release}"
 BUILD_TESTING="${QDGZ300_BUILD_TESTING:-ON}"
 RUN_TESTS="${QDGZ300_RUN_TESTS:-ON}"
@@ -52,7 +57,7 @@ check_file() {
   [[ -f "$1" ]] || die "Missing required file: $1"
 }
 
-log "Step 1/4: Validate production build environment"
+log "Step 1/5: Validate production build environment"
 [[ "$(uname -s)" == "Linux" ]] || die "Production build must run on Linux."
 check_command cmake
 check_command ninja
@@ -65,7 +70,23 @@ if [[ "${ENABLE_GPU}" == "ON" ]]; then
   export LD_LIBRARY_PATH="${COREX_ROOT}/lib64:${COREX_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 fi
 
-log "Step 2/4: Configure native build"
+log "Step 2/5: Prepare shared dependency cache"
+prepare_env=(
+  "QDGZ300_OFFLINE_DEPS_DIR=${OFFLINE_DEPS_DIR}"
+  "QDGZ300_DEPS_ROOT=${DEPS_ROOT}"
+  "QDGZ300_BUILD_TYPE=${BUILD_TYPE}"
+)
+
+if [[ "${ENABLE_GPU}" == "ON" ]]; then
+  prepare_env+=(
+    "QDGZ300_C_COMPILER=${COREX_CLANG}"
+    "QDGZ300_CXX_COMPILER=${COREX_CLANGXX}"
+  )
+fi
+
+env "${prepare_env[@]}" bash "${ROOT_DIR}/scripts/prepare_native_deps.sh"
+
+log "Step 3/5: Configure native build"
 cmake_args=(
   -S "${ROOT_DIR}"
   -B "${BUILD_DIR}"
@@ -75,6 +96,9 @@ cmake_args=(
   -DBUILD_SIMULATOR="${BUILD_SIMULATOR}"
   -DENABLE_GPU="${ENABLE_GPU}"
   -DENABLE_PROTOBUF="${ENABLE_PROTOBUF}"
+  -DQDGZ300_OFFLINE_DEPS_DIR="${OFFLINE_DEPS_DIR}"
+  -DQDGZ300_DEPS_ROOT="${DEPS_ROOT}"
+  -DQDGZ300_DEPS_PREFIX="${DEPS_PREFIX}"
 )
 
 if [[ "${ENABLE_GPU}" == "ON" ]]; then
@@ -86,14 +110,14 @@ fi
 
 cmake "${cmake_args[@]}"
 
-log "Step 3/4: Build"
+log "Step 4/5: Build"
 if [[ -n "${BUILD_TARGET}" ]]; then
   cmake --build "${BUILD_DIR}" --target "${BUILD_TARGET}"
 else
   cmake --build "${BUILD_DIR}"
 fi
 
-log "Step 4/4: Run unit tests"
+log "Step 5/5: Run unit tests"
 if [[ "${RUN_TESTS}" == "ON" && "${BUILD_TESTING}" == "ON" ]]; then
   ctest_cmd=(ctest --test-dir "${BUILD_DIR}/tests/unit" --output-on-failure)
   if [[ -n "${TEST_REGEX}" ]]; then
