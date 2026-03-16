@@ -32,8 +32,9 @@ target_link_libraries(qdgz300_m01
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    if(RT_LIBRARY)
-        target_link_libraries(qdgz300_m01 PUBLIC ${RT_LIBRARY})
+    find_library(QDGZ300_RT_LIBRARY rt)
+    if(QDGZ300_RT_LIBRARY)
+        target_link_libraries(qdgz300_m01 PUBLIC ${QDGZ300_RT_LIBRARY})
     endif()
 
     if(NUMA_LIBRARY)
