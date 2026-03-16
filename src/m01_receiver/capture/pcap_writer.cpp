@@ -6,10 +6,14 @@
 #include <chrono>
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <string>
+#include <system_error>
 
+#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 namespace receiver
 {
@@ -30,6 +34,8 @@ namespace receiver
             constexpr size_t kSourceIdOffset = 20u;
             constexpr uint64_t kBytesPerMb = 1024ull * 1024ull;
             constexpr char kPathSep = '/';
+            constexpr const char *kPartialSuffix = ".pcap.part";
+            constexpr const char *kSealedSuffix = ".pcap";
 
             bool create_directory_if_missing(const std::string &path)
             {
@@ -104,6 +110,19 @@ namespace receiver
                 }
                 return dir + kPathSep + file;
             }
+
+            void pin_writer_thread_to_management_cpus()
+            {
+#if defined(__linux__)
+                cpu_set_t cpuset;
+                CPU_ZERO(&cpuset);
+                for (int cpu = 0; cpu <= 15; ++cpu)
+                {
+                    CPU_SET(cpu, &cpuset);
+                }
+                (void)pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+#endif
+            }
         } // namespace
 
         PcapWriter::PcapWriter(const PcapWriterConfig &config)
@@ -134,25 +153,37 @@ namespace receiver
                 return false;
             }
 
+            pending_packets_.clear();
             packets_written_.store(0, std::memory_order_release);
+            enqueued_packets_.store(0, std::memory_order_release);
+            dropped_queue_full_.store(0, std::memory_order_release);
+            write_errors_.store(0, std::memory_order_release);
+            rotated_files_.store(0, std::memory_order_release);
+            accepting_packets_.store(true, std::memory_order_release);
             recording_.store(true, std::memory_order_release);
+            writer_thread_ = std::thread(&PcapWriter::run_writer_loop, this);
             return true;
         }
 
         void PcapWriter::stop()
         {
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (current_file_.is_open())
+            accepting_packets_.store(false, std::memory_order_release);
+            cv_.notify_all();
+
+            if (writer_thread_.joinable())
             {
-                current_file_.flush();
-                current_file_.close();
+                writer_thread_.join();
             }
+
+            std::lock_guard<std::mutex> lock(mutex_);
+            (void)seal_current_file();
+            pending_packets_.clear();
             recording_.store(false, std::memory_order_release);
         }
 
         void PcapWriter::write_packet(const uint8_t *raw_data, size_t length, uint64_t timestamp_us)
         {
-            if (!recording_.load(std::memory_order_acquire))
+            if (!accepting_packets_.load(std::memory_order_acquire))
             {
                 return;
             }
@@ -165,35 +196,27 @@ namespace receiver
                 return;
             }
 
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (!recording_.load(std::memory_order_acquire) || !current_file_.is_open())
+            PendingPacket packet;
+            packet.timestamp_us = timestamp_us;
+            packet.data.assign(raw_data, raw_data + length);
+
             {
-                return;
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!accepting_packets_.load(std::memory_order_acquire))
+                {
+                    return;
+                }
+                const size_t queue_capacity = std::max<size_t>(1, config_.pending_queue_capacity);
+                if (pending_packets_.size() >= queue_capacity)
+                {
+                    dropped_queue_full_.fetch_add(1, std::memory_order_relaxed);
+                    return;
+                }
+                pending_packets_.push_back(std::move(packet));
+                enqueued_packets_.fetch_add(1, std::memory_order_relaxed);
             }
 
-            pending_record_size_ = kPcapRecordHeaderSize + length;
-            rotate_file_if_needed();
-            if (!current_file_.is_open())
-            {
-                return;
-            }
-
-            const uint32_t ts_sec = static_cast<uint32_t>(timestamp_us / 1000000ull);
-            const uint32_t ts_usec = static_cast<uint32_t>(timestamp_us % 1000000ull);
-            const uint32_t incl_len = static_cast<uint32_t>(length);
-
-            write_record_header(ts_sec, ts_usec, incl_len, incl_len);
-            current_file_.write(reinterpret_cast<const char *>(raw_data), static_cast<std::streamsize>(length));
-            if (!current_file_.good())
-            {
-                current_file_.close();
-                recording_.store(false, std::memory_order_release);
-                return;
-            }
-
-            current_file_size_ += pending_record_size_;
-            packets_written_.fetch_add(1, std::memory_order_relaxed);
-            pending_record_size_ = 0;
+            cv_.notify_one();
         }
 
         bool PcapWriter::is_recording() const
@@ -204,6 +227,30 @@ namespace receiver
         uint64_t PcapWriter::packets_written() const
         {
             return packets_written_.load(std::memory_order_relaxed);
+        }
+
+        PcapWriterStatistics PcapWriter::get_statistics() const
+        {
+            PcapWriterStatistics stats;
+            stats.enqueued_packets = enqueued_packets_.load(std::memory_order_relaxed);
+            stats.written_packets = packets_written_.load(std::memory_order_relaxed);
+            stats.dropped_queue_full = dropped_queue_full_.load(std::memory_order_relaxed);
+            stats.write_errors = write_errors_.load(std::memory_order_relaxed);
+            stats.rotated_files = rotated_files_.load(std::memory_order_relaxed);
+            stats.recording = recording_.load(std::memory_order_acquire);
+            return stats;
+        }
+
+        std::string PcapWriter::current_spool_file() const
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            return current_temp_file_path_;
+        }
+
+        std::string PcapWriter::last_sealed_file() const
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            return last_sealed_file_path_;
         }
 
         void PcapWriter::write_global_header()
@@ -239,14 +286,21 @@ namespace receiver
                 return;
             }
 
-            current_file_.flush();
-            current_file_.close();
-            (void)open_new_file();
+            if (!seal_current_file())
+            {
+                mark_write_error();
+                return;
+            }
+            rotated_files_.fetch_add(1, std::memory_order_relaxed);
+            if (!open_new_file())
+            {
+                mark_write_error();
+            }
         }
 
         bool PcapWriter::open_new_file()
         {
-            if (!ensure_directories(config_.output_dir))
+            if (!ensure_directories(config_.spool_dir))
             {
                 return false;
             }
@@ -255,13 +309,17 @@ namespace receiver
                 std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock::now().time_since_epoch())
                     .count());
-            const std::string file_name =
-                "receiver_capture_" + std::to_string(now_us) + "_" + std::to_string(file_index_++) + ".pcap";
-            const std::string file_path = join_path(config_.output_dir, file_name);
 
-            current_file_.open(file_path.c_str(), std::ios::binary | std::ios::trunc);
+            const std::string base_name =
+                "receiver_spool_" + std::to_string(now_us) + "_" + std::to_string(file_index_++);
+            current_sealed_file_path_ = join_path(config_.spool_dir, base_name + kSealedSuffix);
+            current_temp_file_path_ = join_path(config_.spool_dir, base_name + kPartialSuffix);
+
+            current_file_.open(current_temp_file_path_.c_str(), std::ios::binary | std::ios::trunc);
             if (!current_file_.is_open())
             {
+                current_temp_file_path_.clear();
+                current_sealed_file_path_.clear();
                 return false;
             }
 
@@ -269,10 +327,37 @@ namespace receiver
             if (!current_file_.good())
             {
                 current_file_.close();
+                (void)std::remove(current_temp_file_path_.c_str());
+                current_temp_file_path_.clear();
+                current_sealed_file_path_.clear();
                 return false;
             }
 
-            recent_files_.push_back(file_path);
+            return true;
+        }
+
+        bool PcapWriter::seal_current_file()
+        {
+            if (current_file_.is_open())
+            {
+                current_file_.flush();
+                current_file_.close();
+            }
+
+            if (current_temp_file_path_.empty() || current_sealed_file_path_.empty())
+            {
+                current_temp_file_path_.clear();
+                current_sealed_file_path_.clear();
+                return true;
+            }
+
+            if (::rename(current_temp_file_path_.c_str(), current_sealed_file_path_.c_str()) != 0)
+            {
+                return false;
+            }
+
+            recent_files_.push_back(current_sealed_file_path_);
+            last_sealed_file_path_ = current_sealed_file_path_;
             const size_t keep_count = std::max<size_t>(1, config_.max_files);
             while (recent_files_.size() > keep_count)
             {
@@ -281,7 +366,84 @@ namespace receiver
                 (void)std::remove(old_path.c_str());
             }
 
+            current_temp_file_path_.clear();
+            current_sealed_file_path_.clear();
+            current_file_size_ = 0;
             return true;
+        }
+
+        void PcapWriter::run_writer_loop()
+        {
+            pin_writer_thread_to_management_cpus();
+
+            while (true)
+            {
+                PendingPacket packet;
+                {
+                    std::unique_lock<std::mutex> lock(mutex_);
+                    cv_.wait(lock, [this]()
+                             { return !pending_packets_.empty() || !accepting_packets_.load(std::memory_order_acquire); });
+
+                    if (pending_packets_.empty())
+                    {
+                        if (!accepting_packets_.load(std::memory_order_acquire))
+                        {
+                            break;
+                        }
+                        continue;
+                    }
+
+                    packet = std::move(pending_packets_.front());
+                    pending_packets_.pop_front();
+                }
+
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!current_file_.is_open())
+                {
+                    mark_write_error();
+                    break;
+                }
+
+                pending_record_size_ = kPcapRecordHeaderSize + packet.data.size();
+                rotate_file_if_needed();
+                if (!current_file_.is_open())
+                {
+                    break;
+                }
+
+                const uint32_t ts_sec = static_cast<uint32_t>(packet.timestamp_us / 1000000ull);
+                const uint32_t ts_usec = static_cast<uint32_t>(packet.timestamp_us % 1000000ull);
+                const uint32_t incl_len = static_cast<uint32_t>(packet.data.size());
+
+                write_record_header(ts_sec, ts_usec, incl_len, incl_len);
+                current_file_.write(reinterpret_cast<const char *>(packet.data.data()),
+                                    static_cast<std::streamsize>(packet.data.size()));
+                if (!current_file_.good())
+                {
+                    mark_write_error();
+                    break;
+                }
+
+                current_file_size_ += pending_record_size_;
+                packets_written_.fetch_add(1, std::memory_order_relaxed);
+                pending_record_size_ = 0;
+            }
+
+            std::lock_guard<std::mutex> lock(mutex_);
+            (void)seal_current_file();
+            recording_.store(false, std::memory_order_release);
+        }
+
+        void PcapWriter::mark_write_error()
+        {
+            write_errors_.fetch_add(1, std::memory_order_relaxed);
+            accepting_packets_.store(false, std::memory_order_release);
+            recording_.store(false, std::memory_order_release);
+            if (current_file_.is_open())
+            {
+                current_file_.flush();
+                current_file_.close();
+            }
         }
 
         bool PcapWriter::passes_filters(const uint8_t *raw_data, size_t length) const

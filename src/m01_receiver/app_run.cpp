@@ -68,7 +68,8 @@ namespace
     {
         receiver::capture::PcapWriterConfig capture_cfg;
         capture_cfg.enabled = cfg.enabled;
-        capture_cfg.output_dir = cfg.output_dir;
+        capture_cfg.spool_dir = cfg.spool_dir;
+        capture_cfg.archive_dir = cfg.archive_dir;
         capture_cfg.max_file_size_mb = cfg.max_file_size_mb;
         capture_cfg.max_files = cfg.max_files;
         capture_cfg.filter_packet_types = cfg.filter_packet_types;
@@ -121,7 +122,14 @@ namespace
             if (old_writer)
             {
                 old_writer->stop();
-                LOG_INFO("Capture disabled by config reload");
+                const auto stats = old_writer->get_statistics();
+                LOG_INFO("Capture disabled by config reload: enqueued=%llu written=%llu queue_dropped=%llu write_errors=%llu rotated=%llu last_sealed=%s",
+                         static_cast<unsigned long long>(stats.enqueued_packets),
+                         static_cast<unsigned long long>(stats.written_packets),
+                         static_cast<unsigned long long>(stats.dropped_queue_full),
+                         static_cast<unsigned long long>(stats.write_errors),
+                         static_cast<unsigned long long>(stats.rotated_files),
+                         old_writer->last_sealed_file().c_str());
             }
             return;
         }
@@ -145,7 +153,7 @@ namespace
                                                    writer->write_packet(raw_data, length, timestamp_us);
                                                } });
         LOG_INFO("Capture enabled/reconfigured by config reload: dir=%s max_file_size_mb=%u max_files=%u",
-                 cfg.output_dir.c_str(),
+                 cfg.spool_dir.c_str(),
                  static_cast<unsigned>(cfg.max_file_size_mb),
                  static_cast<unsigned>(cfg.max_files));
     }
@@ -620,6 +628,14 @@ namespace receiver
         if (pcap_writer)
         {
             pcap_writer->stop();
+            const auto stats = pcap_writer->get_statistics();
+            LOG_INFO("Capture spool summary: enqueued=%llu written=%llu queue_dropped=%llu write_errors=%llu rotated=%llu last_sealed=%s",
+                     static_cast<unsigned long long>(stats.enqueued_packets),
+                     static_cast<unsigned long long>(stats.written_packets),
+                     static_cast<unsigned long long>(stats.dropped_queue_full),
+                     static_cast<unsigned long long>(stats.write_errors),
+                     static_cast<unsigned long long>(stats.rotated_files),
+                     pcap_writer->last_sealed_file().c_str());
         }
         enforce_shutdown_timeout("pcap_writer.stop");
 

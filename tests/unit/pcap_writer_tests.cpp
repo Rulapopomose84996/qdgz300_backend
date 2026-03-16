@@ -102,6 +102,29 @@ namespace
         return files;
     }
 
+    std::vector<std::string> list_partial_files(const std::string &dir)
+    {
+        std::vector<std::string> files;
+        DIR *dp = ::opendir(dir.c_str());
+        if (dp == nullptr)
+        {
+            return files;
+        }
+
+        dirent *entry = nullptr;
+        while ((entry = ::readdir(dp)) != nullptr)
+        {
+            const std::string name(entry->d_name);
+            if (name.size() >= 10 && name.substr(name.size() - 10) == ".pcap.part")
+            {
+                files.push_back(path_join(dir, name));
+            }
+        }
+
+        ::closedir(dp);
+        return files;
+    }
+
     uint64_t file_size_bytes(const std::string &path)
     {
         struct stat st;
@@ -147,7 +170,7 @@ TEST(PcapWriterTests, WriteAndReadGlobalHeader)
 
     PcapWriterConfig cfg;
     cfg.enabled = true;
-    cfg.output_dir = temp_dir;
+    cfg.spool_dir = temp_dir;
 
     PcapWriter writer(cfg);
     ASSERT_TRUE(writer.start());
@@ -176,7 +199,7 @@ TEST(PcapWriterTests, WritePacketRecord)
 
     PcapWriterConfig cfg;
     cfg.enabled = true;
-    cfg.output_dir = temp_dir;
+    cfg.spool_dir = temp_dir;
 
     PcapWriter writer(cfg);
     ASSERT_TRUE(writer.start());
@@ -193,6 +216,7 @@ TEST(PcapWriterTests, WritePacketRecord)
     const uint64_t size = file_size_bytes(pcap_file);
     const uint64_t expected = 24u + 3u * (16u + static_cast<uint64_t>(packet.size()));
     EXPECT_EQ(size, expected);
+    EXPECT_TRUE(list_partial_files(temp_dir).empty());
 
     remove_dir_tree(temp_dir);
 }
@@ -203,7 +227,7 @@ TEST(PcapWriterTests, FileRotation)
 
     PcapWriterConfig cfg;
     cfg.enabled = true;
-    cfg.output_dir = temp_dir;
+    cfg.spool_dir = temp_dir;
     cfg.max_file_size_mb = 0;
     cfg.max_files = 3;
 
@@ -230,7 +254,7 @@ TEST(PcapWriterTests, FilterByPacketType)
 
     PcapWriterConfig cfg;
     cfg.enabled = true;
-    cfg.output_dir = temp_dir;
+    cfg.spool_dir = temp_dir;
     cfg.filter_packet_types = {static_cast<uint8_t>(receiver::protocol::PacketType::DATA)};
 
     PcapWriter writer(cfg);
@@ -252,4 +276,42 @@ TEST(PcapWriterTests, FilterByPacketType)
     EXPECT_EQ(writer.packets_written(), 1u);
 
     remove_dir_tree(temp_dir);
+}
+
+TEST(PcapWriterTests, QueueFullDropsPacketsWithoutBlockingCaller)
+{
+    const auto temp_dir = make_temp_dir("queue_full");
+
+    PcapWriterConfig cfg;
+    cfg.enabled = true;
+    cfg.spool_dir = temp_dir;
+    cfg.max_file_size_mb = 0;
+    cfg.max_files = 2;
+    cfg.pending_queue_capacity = 8;
+
+    PcapWriter writer(cfg);
+    ASSERT_TRUE(writer.start());
+
+    const auto packet = make_raw_packet(static_cast<uint8_t>(receiver::protocol::PacketType::DATA), 0x01, 1500);
+    for (size_t i = 0; i < 2000; ++i)
+    {
+        writer.write_packet(packet.data(), packet.size(), 1000000 + i);
+    }
+    writer.stop();
+
+    const auto stats = writer.get_statistics();
+    EXPECT_GT(stats.dropped_queue_full, 0u);
+    EXPECT_GT(stats.written_packets, 0u);
+
+    remove_dir_tree(temp_dir);
+}
+
+TEST(PcapWriterTests, StartFailsWhenSpoolDirectoryCannotBeCreated)
+{
+    PcapWriterConfig cfg;
+    cfg.enabled = true;
+    cfg.spool_dir = "/dev/null/receiver_spool";
+
+    PcapWriter writer(cfg);
+    EXPECT_FALSE(writer.start());
 }

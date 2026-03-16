@@ -35,6 +35,15 @@ consumer:
   output_dir: "/tmp/receiver_rawblocks"
   stats_interval_ms: 1000
 
+capture:
+  enabled: false
+  spool_dir: "/tmp/receiver_spool"
+  archive_dir: "/data/qdgz300/receiver"
+  max_file_size_mb: 256
+  max_files: 4
+  filter_packet_types: ["0x03", "0x04"]
+  filter_source_ids: []
+
 performance:
   prefetch_hints_enabled: true
   qos_enabled: true

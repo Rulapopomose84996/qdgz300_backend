@@ -345,7 +345,8 @@ namespace receiver
         {
             capture::PcapWriterConfig capture_cfg;
             capture_cfg.enabled = config.capture.enabled;
-            capture_cfg.output_dir = config.capture.output_dir;
+            capture_cfg.spool_dir = config.capture.spool_dir;
+            capture_cfg.archive_dir = config.capture.archive_dir;
             capture_cfg.max_file_size_mb = config.capture.max_file_size_mb;
             capture_cfg.max_files = config.capture.max_files;
             capture_cfg.filter_packet_types = config.capture.filter_packet_types;
@@ -354,6 +355,11 @@ namespace receiver
             if (pcap_writer->start())
             {
                 std::atomic_store_explicit(&ctx.pcap_writer, std::move(pcap_writer), std::memory_order_release);
+                LOG_INFO("Capture spool enabled: spool_dir=%s archive_dir=%s max_file_size_mb=%u max_files=%u",
+                         config.capture.spool_dir.c_str(),
+                         config.capture.archive_dir.c_str(),
+                         static_cast<unsigned>(config.capture.max_file_size_mb),
+                         static_cast<unsigned>(config.capture.max_files));
                 udp_config.capture_hook = [&](const uint8_t *raw_data, size_t length, uint64_t timestamp_us)
                 {
                     auto writer = std::atomic_load_explicit(&ctx.pcap_writer, std::memory_order_acquire);
@@ -365,7 +371,8 @@ namespace receiver
             }
             else
             {
-                LOG_WARN("Capture enabled but pcap writer failed to start");
+                LOG_WARN("Capture enabled but spool writer failed to start: spool_dir=%s",
+                         config.capture.spool_dir.c_str());
             }
         }
 

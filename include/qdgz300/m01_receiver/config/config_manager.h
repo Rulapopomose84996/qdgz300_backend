@@ -104,7 +104,8 @@ namespace receiver
             struct Capture
             {
                 bool enabled = false;
-                std::string output_dir = "/var/log/receiver";
+                std::string spool_dir = "/var/spool/qdgz300/receiver";
+                std::string archive_dir = "/data/qdgz300/receiver";
                 size_t max_file_size_mb = 1024;
                 size_t max_files = 10;
                 std::vector<uint8_t> filter_packet_types;
