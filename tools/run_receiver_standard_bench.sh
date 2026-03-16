@@ -10,6 +10,7 @@ RESULTS_DIR_EXPLICIT=0
 BIND_IP="127.0.0.1"
 TARGET_IP="127.0.0.1"
 PORT=9999
+PORT_EXPLICIT=0
 SENDER_THREADS=2
 COMMON_HEADER_BYTES=32
 WARMUP_SEC=0.2
@@ -57,6 +58,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --port)
             PORT="$2"
+            PORT_EXPLICIT=1
             shift 2
             ;;
         --sender-threads)
@@ -115,6 +117,53 @@ if ! command -v python3 >/dev/null 2>&1; then
     echo "python3 is required." >&2
     exit 1
 fi
+
+select_bench_port() {
+    local bind_ip="$1"
+    local requested_port="$2"
+    local explicit_port="$3"
+
+    python3 - <<PY
+import socket
+import sys
+
+bind_ip = "${bind_ip}"
+requested_port = int("${requested_port}")
+explicit_port = int("${explicit_port}")
+
+def can_bind(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.bind((ip, port))
+        return True
+    except OSError:
+        return False
+    finally:
+        sock.close()
+
+if can_bind(bind_ip, requested_port):
+    print(requested_port)
+    raise SystemExit(0)
+
+if explicit_port:
+    raise SystemExit(1)
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((bind_ip, 0))
+port = sock.getsockname()[1]
+sock.close()
+print(port)
+PY
+}
+
+SELECTED_PORT="$(select_bench_port "${BIND_IP}" "${PORT}" "${PORT_EXPLICIT}")" || {
+    echo "[ERROR] UDP port ${PORT} is already in use on ${BIND_IP}; specify a free port with --port." >&2
+    exit 1
+}
+if [[ "${SELECTED_PORT}" != "${PORT}" ]]; then
+    echo "[INFO] UDP port ${PORT} is in use on ${BIND_IP}, switching to free port ${SELECTED_PORT}"
+fi
+PORT="${SELECTED_PORT}"
 
 HAVE_PIDSTAT=0
 if command -v pidstat >/dev/null 2>&1; then
@@ -194,6 +243,12 @@ def read_json(path: Path):
 rx = read_json(rx_path)
 tx = read_json(tx_path)
 
+rx_error = None
+if not rx and Path(r"${rx_log}").exists():
+    log_lines = Path(r"${rx_log}").read_text(encoding="utf-8", errors="ignore").splitlines()
+    if log_lines:
+        rx_error = log_lines[-1]
+
 tx_actual_pps = float(tx.get("actual_pps", 0.0) or 0.0)
 rx_valid_pps = float(rx.get("valid_pps", 0.0) or 0.0)
 loss_rate = 1.0 - (rx_valid_pps / tx_actual_pps) if tx_actual_pps > 0 else 1.0
@@ -233,6 +288,7 @@ obj = {
     "loss_rate": loss_rate,
     "throughput_mbps": throughput_mbps,
     "cpu_avg_percent": cpu_avg,
+    "rx_error": rx_error,
     "notes": r"${notes}",
     "raw": {"tx": tx, "rx": rx}
 }
@@ -240,6 +296,12 @@ obj = {
 Path(r"${case_json}").write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 print(f"[CASE] {obj['case_id']} target_pps={obj['target_pps']:.2f} tx={obj['tx_actual_pps']:.2f} rx={obj['rx_valid_pps']:.2f} loss={obj['loss_rate']:.6f} cpu={obj['cpu_avg_percent']}")
 PY
+
+    if [[ ! -f "${rx_json}" ]]; then
+        echo "[ERROR] Receiver benchmark did not produce ${rx_json}" >&2
+        sed -n '1,40p' "${rx_log}" >&2 || true
+        exit 1
+    fi
 }
 
 echo "[INFO] Results dir: ${RESULTS_DIR}"
