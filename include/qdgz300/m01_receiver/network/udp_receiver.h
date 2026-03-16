@@ -78,7 +78,9 @@ namespace receiver
 
             // ── 性能参数（各阵面共享） ───────────────────────────────
             size_t recv_batch_size = 64;        ///< recvmmsg 单次批量接收报文数
+            size_t recv_drain_rounds = 4;       ///< 单次唤醒后连续 drain socket queue 的最大轮数
             size_t socket_rcvbuf_mb = 256;      ///< SO_RCVBUF 大小（MB）
+            size_t packet_pool_mb_per_face = 64; ///< 每阵面 PacketPool 预算（MB）
             bool enable_so_reuseport = true;    ///< 是否启用 SO_REUSEPORT
             bool enable_ip_freebind = false;    ///< 是否允许 bind 到当前未配置在本机上的 IPv4 地址
             int worker_threads = 8;             ///< 工作线程数（当前未使用，每阵面 1 线程）
@@ -122,6 +124,13 @@ namespace receiver
             std::atomic<uint64_t> recv_errors{0};          ///< 接收系统调用错误次数
             std::atomic<uint64_t> affinity_failures{0};    ///< CPU 亲和性设置失败次数
             std::atomic<uint64_t> socket_bind_failures{0}; ///< Socket 绑定失败次数
+        };
+
+        struct ArrayFaceRuntimeStats
+        {
+            uint8_t array_id{0};
+            bool affinity_verified{false};
+            PacketPool::Statistics packet_pool{};
         };
 
         /**
@@ -202,6 +211,7 @@ namespace receiver
              * @return 当前统计信息的只读引用（各计数器为 atomic，可并发读取）
              */
             const UdpReceiverStatistics &get_statistics() const { return stats_; }
+            std::vector<ArrayFaceRuntimeStats> get_face_runtime_stats() const;
 
         private:
             /**

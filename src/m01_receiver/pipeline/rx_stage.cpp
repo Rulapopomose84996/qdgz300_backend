@@ -52,6 +52,17 @@ namespace receiver
             // ── Step 4: 推入 SPSC 队列（drop-oldest 溢出策略） ───────
             queue_.drop_oldest_push(std::move(env));
             enqueued_.fetch_add(1, std::memory_order_relaxed);
+
+            const size_t depth = queue_.size();
+            size_t watermark = queue_high_watermark_.load(std::memory_order_relaxed);
+            while (depth > watermark &&
+                   !queue_high_watermark_.compare_exchange_weak(
+                       watermark,
+                       depth,
+                       std::memory_order_relaxed,
+                       std::memory_order_relaxed))
+            {
+            }
         }
 
         RxStage::Stats RxStage::get_stats() const noexcept
@@ -61,7 +72,8 @@ namespace receiver
                 parse_ok_.load(std::memory_order_relaxed),
                 validate_ok_.load(std::memory_order_relaxed),
                 enqueued_.load(std::memory_order_relaxed),
-                queue_.drop_count()};
+                queue_.drop_count(),
+                queue_high_watermark_.load(std::memory_order_relaxed)};
         }
 
     } // namespace pipeline

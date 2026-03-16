@@ -57,6 +57,8 @@ namespace receiver
         // =================================================================
         namespace
         {
+            constexpr size_t kPacketBufferSize = 65535;
+
             /**
              * @brief 发出 CPU 缓存预取提示
              *
@@ -171,8 +173,8 @@ namespace receiver
         /**
          * @brief 构造函数：保存配置并预创建缓冲池
          *
-         * PacketPool 预分配 (batch_size * 4) 个 65535 字节的缓冲区，
-         * 确保在收包高峰时有足够的预分配内存可用（零拷贝）。
+         * PacketPool 按最小批次和目标预算共同决定缓冲区数量，
+         * 确保在突发流量和 drain 多轮场景下有足够的预分配内存可用。
          */
         ArrayFaceReceiver::ArrayFaceReceiver(const ArrayFaceReceiverConfig &config,
                                              PacketHandler packet_handler,
@@ -183,9 +185,11 @@ namespace receiver
               capture_hook_provider_(std::move(capture_hook_provider)),
               stats_sink_(stats_sink)
         {
-            // 缓冲池大小 = 批量大小 ×4（确保 recvmmsg 连续多次调用不会耗尽缓冲区）
-            const size_t pool_size = effective_batch_size(config_) * 4;
-            packet_pool_ = std::make_unique<PacketPool>(65535, pool_size, config_.numa_node);
+            const size_t min_pool_size = effective_batch_size(config_) * std::max<size_t>(4, config_.recv_drain_rounds);
+            const size_t pool_bytes = config_.packet_pool_mb * 1024u * 1024u;
+            const size_t budget_pool_size = std::max<size_t>(1, (pool_bytes + (kPacketBufferSize - 1)) / kPacketBufferSize);
+            const size_t pool_size = std::max(min_pool_size, budget_pool_size);
+            packet_pool_ = std::make_unique<PacketPool>(kPacketBufferSize, pool_size, config_.numa_node);
         }
 
         ArrayFaceReceiver::~ArrayFaceReceiver()
@@ -447,6 +451,7 @@ namespace receiver
         {
             auto &metrics = monitoring::MetricsCollector::instance();
             const size_t batch_size = effective_batch_size(config_);
+            const size_t drain_rounds = std::max<size_t>(1, config_.recv_drain_rounds);
 
             // =================================================================
             // Linux 路径：recvmmsg 批量收包
@@ -489,35 +494,165 @@ namespace receiver
             // ── 主循环：持续接收直到 running_ 变为 false ────────────
             while (running_.load(std::memory_order_acquire))
             {
-                // ── Phase 1: 从 PacketPool 批量分配接收缓冲区 ───────
-                bool allocation_failed = false;
-                for (size_t i = 0; i < batch_size; ++i)
+                for (size_t drain_round = 0; drain_round < drain_rounds &&
+                                            running_.load(std::memory_order_acquire);
+                     ++drain_round)
                 {
-                    // P1-6 优化：仅更新每批次变化的字段，不做全量 memset
-                    msg_headers[i].msg_len = 0;
-                    msg_headers[i].msg_hdr.msg_controllen = static_cast<socklen_t>(control_buffers[i].size());
-                    msg_headers[i].msg_hdr.msg_flags = 0;
-
-                    // 从内存池分配 65535 字节的缓冲区
-                    recv_buffers[i] = packet_pool_->allocate();
-                    if (recv_buffers[i] == nullptr)
+                    // ── Phase 1: 从 PacketPool 批量分配接收缓冲区 ───────
+                    bool allocation_failed = false;
+                    for (size_t i = 0; i < batch_size; ++i)
                     {
-                        // 内存池耗尽（极端情况）→ 记录错误并放弃本批次
-                        atomic_increment(stats_sink_.recv_errors);
-                        metrics.increment_socket_receive_errors();
-                        allocation_failed = true;
+                        // P1-6 优化：仅更新每批次变化的字段，不做全量 memset
+                        msg_headers[i].msg_len = 0;
+                        msg_headers[i].msg_hdr.msg_controllen = static_cast<socklen_t>(control_buffers[i].size());
+                        msg_headers[i].msg_hdr.msg_flags = 0;
+
+                        recv_buffers[i] = packet_pool_->allocate();
+                        if (recv_buffers[i] == nullptr)
+                        {
+                            atomic_increment(stats_sink_.recv_errors);
+                            metrics.increment_socket_receive_errors();
+                            allocation_failed = true;
+                            break;
+                        }
+
+                        iovecs[i].iov_base = recv_buffers[i];
+                    }
+
+                    if (allocation_failed)
+                    {
+                        for (uint8_t *buffer : recv_buffers)
+                        {
+                            if (buffer != nullptr)
+                            {
+                                packet_pool_->deallocate(buffer);
+                            }
+                        }
                         break;
                     }
 
-                    // 设置 scatter/gather IO：指向分配的缓冲区
-                    iovecs[i].iov_base = recv_buffers[i];
+                    const int recv_flags = (drain_round == 0) ? 0 : MSG_DONTWAIT;
+                    const int received = recvmmsg(
+                        sockfd_,
+                        msg_headers.data(),
+                        static_cast<unsigned int>(batch_size),
+                        recv_flags,
+                        nullptr);
 
-                    // msg_hdr 的 msg_iov / msg_iovlen / msg_control 已在循环外初始化
-                }
+                    if (received <= 0)
+                    {
+                        for (uint8_t *buffer : recv_buffers)
+                        {
+                            if (buffer != nullptr)
+                            {
+                                packet_pool_->deallocate(buffer);
+                            }
+                        }
 
-                if (allocation_failed)
-                {
-                    // 分配失败→归还已分配的缓冲区后重试
+                        if (received < 0 && running_.load(std::memory_order_acquire) &&
+                            errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK)
+                        {
+                            atomic_increment(stats_sink_.recv_errors);
+                            metrics.increment_socket_receive_errors();
+                        }
+
+                        if (drain_round == 0)
+                        {
+                            break;
+                        }
+                        break;
+                    }
+
+                    metrics.increment_socket_receive_batches();
+
+                    // ── P1-4 优化：整个批次共享一个时间戳 ───────────────
+                    const uint64_t batch_timestamp_ns = static_cast<uint64_t>(
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch())
+                            .count());
+
+                    const auto capture_hook =
+                        capture_hook_provider_ ? capture_hook_provider_() : std::shared_ptr<CaptureHook>{};
+
+                    heartbeat_batch.clear();
+                    data_batch.clear();
+
+                    for (int i = 0; i < received; ++i)
+                    {
+                        const size_t next_index = static_cast<size_t>(i + 1);
+                        if (next_index < static_cast<size_t>(received) &&
+                            recv_buffers[next_index] != nullptr &&
+                            config_.prefetch_hints_enabled)
+                        {
+                            prefetch_read(recv_buffers[next_index]);
+                        }
+
+                        const size_t packet_len = static_cast<size_t>(msg_headers[static_cast<size_t>(i)].msg_len);
+                        PacketBuffer packet_buffer(recv_buffers[static_cast<size_t>(i)], packet_pool_.get());
+                        recv_buffers[static_cast<size_t>(i)] = nullptr;
+
+                        metrics.increment_socket_packets_received();
+                        metrics.increment_socket_bytes_received(static_cast<uint64_t>(packet_len));
+
+                        if (config_.source_filter_enabled)
+                        {
+                            constexpr size_t kSourceOffset = offsetof(protocol::CommonHeader, source_id);
+                            if (packet_len <= kSourceOffset || packet_buffer.get()[kSourceOffset] != config_.expected_source_id)
+                            {
+                                atomic_increment(stats_sink_.packets_filtered);
+                                metrics.increment_socket_source_filtered();
+                                continue;
+                            }
+                        }
+
+                        const uint64_t receive_timestamp_ns = batch_timestamp_ns;
+                        const uint8_t dscp = extract_dscp_from_cmsg(msg_headers[static_cast<size_t>(i)].msg_hdr);
+                        const protocol::PacketPriority priority =
+                            classify_priority(packet_buffer.get(), packet_len, dscp);
+
+                        if (capture_hook)
+                        {
+                            (*capture_hook)(packet_buffer.get(), packet_len, receive_timestamp_ns / 1000ull);
+                        }
+
+                        atomic_increment(stats_sink_.packets_received);
+                        atomic_increment(stats_sink_.bytes_received, static_cast<uint64_t>(packet_len));
+
+                        PendingPacket pending{};
+                        pending.packet_buffer = std::move(packet_buffer);
+                        pending.packet_len = packet_len;
+                        pending.receive_timestamp_ns = receive_timestamp_ns;
+                        pending.priority = priority;
+                        if (priority == protocol::PacketPriority::HIGH)
+                        {
+                            heartbeat_batch.push_back(std::move(pending));
+                        }
+                        else
+                        {
+                            data_batch.push_back(std::move(pending));
+                        }
+                    }
+
+                    if (packet_handler_)
+                    {
+                        for (auto &pending : heartbeat_batch)
+                        {
+                            packet_handler_(std::move(pending.packet_buffer),
+                                            pending.packet_len,
+                                            pending.receive_timestamp_ns,
+                                            config_.array_id,
+                                            pending.priority);
+                        }
+                        for (auto &pending : data_batch)
+                        {
+                            packet_handler_(std::move(pending.packet_buffer),
+                                            pending.packet_len,
+                                            pending.receive_timestamp_ns,
+                                            config_.array_id,
+                                            pending.priority);
+                        }
+                    }
+
                     for (uint8_t *buffer : recv_buffers)
                     {
                         if (buffer != nullptr)
@@ -525,156 +660,10 @@ namespace receiver
                             packet_pool_->deallocate(buffer);
                         }
                     }
-                    continue;
-                }
 
-                // ── Phase 2: recvmmsg 批量系统调用 ──────────────────
-                // 一次系统调用最多收取 batch_size 个 UDP 报文，
-                // timeout=nullptr 表示使用 SO_RCVTIMEO 的超时设置 (100ms)。
-                const int received = recvmmsg(
-                    sockfd_,
-                    msg_headers.data(),
-                    static_cast<unsigned int>(batch_size),
-                    0,        // flags
-                    nullptr); // timeout（使用 socket 级别超时）
-
-                if (received <= 0)
-                {
-                    // 无报文可收（超时或错误）→ 归还所有缓冲区
-                    for (uint8_t *buffer : recv_buffers)
+                    if (received < static_cast<int>(batch_size))
                     {
-                        if (buffer != nullptr)
-                        {
-                            packet_pool_->deallocate(buffer);
-                        }
-                    }
-
-                    // 仅在非预期错误时记录（忽略信号中断和超时）
-                    if (received < 0 && running_.load(std::memory_order_acquire) &&
-                        errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK)
-                    {
-                        atomic_increment(stats_sink_.recv_errors);
-                        metrics.increment_socket_receive_errors();
-                    }
-                    continue;
-                }
-
-                metrics.increment_socket_receive_batches();
-
-                // ── P1-4 优化：整个批次共享一个时间戳 ───────────────
-                // 同一 recvmmsg 批次内报文的到达时间差 < 1μs，共享时间戳不影响精度
-                const uint64_t batch_timestamp_ns = static_cast<uint64_t>(
-                    std::chrono::duration_cast<std::chrono::nanoseconds>(
-                        std::chrono::steady_clock::now().time_since_epoch())
-                        .count());
-
-                // ── P1-5 优化：每批次加载一次 capture_hook ──────────
-                const auto capture_hook =
-                    capture_hook_provider_ ? capture_hook_provider_() : std::shared_ptr<CaptureHook>{};
-
-                // ── Phase 3: 逐包处理 + 优先级分桶 ─────────────────
-                // P1-3 优化：clear() 复用已有 capacity，避免重新堆分配
-                heartbeat_batch.clear();
-                data_batch.clear();
-
-                for (int i = 0; i < received; ++i)
-                {
-                    // ── 预取优化：提前加载下一个报文的缓存行 ────────
-                    const size_t next_index = static_cast<size_t>(i + 1);
-                    if (next_index < static_cast<size_t>(received) &&
-                        recv_buffers[next_index] != nullptr &&
-                        config_.prefetch_hints_enabled)
-                    {
-                        prefetch_read(recv_buffers[next_index]);
-                    }
-
-                    const size_t packet_len = static_cast<size_t>(msg_headers[static_cast<size_t>(i)].msg_len);
-                    // 将原始指针包装为 PacketBuffer（RAII，离开作用域自动归还 pool）
-                    PacketBuffer packet_buffer(recv_buffers[static_cast<size_t>(i)], packet_pool_.get());
-                    recv_buffers[static_cast<size_t>(i)] = nullptr; // 所有权已转移
-
-                    metrics.increment_socket_packets_received();
-                    metrics.increment_socket_bytes_received(static_cast<uint64_t>(packet_len));
-
-                    // ── 源 ID 过滤 ──────────────────────────────────
-                    // 直接读取协议头中的 source_id 字段（无需完整解析）
-                    if (config_.source_filter_enabled)
-                    {
-                        constexpr size_t kSourceOffset = offsetof(protocol::CommonHeader, source_id);
-                        if (packet_len <= kSourceOffset || packet_buffer.get()[kSourceOffset] != config_.expected_source_id)
-                        {
-                            atomic_increment(stats_sink_.packets_filtered);
-                            metrics.increment_socket_source_filtered();
-                            continue; // PacketBuffer 析构时自动归还缓冲区
-                        }
-                    }
-
-                    // ── 接收时间戳（使用批次级时间戳） ─────────────
-                    const uint64_t receive_timestamp_ns = batch_timestamp_ns;
-
-                    // ── DSCP 优先级分类 ──────────────────────────────
-                    // 从 cmsg 中提取 IP TOS 字段的 DSCP 部分
-                    const uint8_t dscp = extract_dscp_from_cmsg(msg_headers[static_cast<size_t>(i)].msg_hdr);
-                    const protocol::PacketPriority priority =
-                        classify_priority(packet_buffer.get(), packet_len, dscp);
-
-                    // ── 抓包旁路（使用批次级 capture_hook） ──────────
-                    if (capture_hook)
-                    {
-                        // 时间戳从纳秒转换为微秒（pcap 标准时间分辨率）
-                        (*capture_hook)(packet_buffer.get(), packet_len, receive_timestamp_ns / 1000ull);
-                    }
-
-                    // ── 更新统计计数器 ───────────────────────────────
-                    atomic_increment(stats_sink_.packets_received);
-                    atomic_increment(stats_sink_.bytes_received, static_cast<uint64_t>(packet_len));
-
-                    // ── 按优先级分桶 ─────────────────────────────────
-                    PendingPacket pending{};
-                    pending.packet_buffer = std::move(packet_buffer);
-                    pending.packet_len = packet_len;
-                    pending.receive_timestamp_ns = receive_timestamp_ns;
-                    pending.priority = priority;
-                    if (priority == protocol::PacketPriority::HIGH)
-                    {
-                        heartbeat_batch.push_back(std::move(pending));
-                    }
-                    else
-                    {
-                        data_batch.push_back(std::move(pending));
-                    }
-                }
-
-                // ── Phase 4: 按优先级投递（心跳包先于数据包） ───────
-                // 这确保了即使数据流量很大，心跳检测也不会被延迟
-                if (packet_handler_)
-                {
-                    for (auto &pending : heartbeat_batch)
-                    {
-                        packet_handler_(std::move(pending.packet_buffer),
-                                        pending.packet_len,
-                                        pending.receive_timestamp_ns,
-                                        config_.array_id,
-                                        pending.priority);
-                    }
-                    for (auto &pending : data_batch)
-                    {
-                        packet_handler_(std::move(pending.packet_buffer),
-                                        pending.packet_len,
-                                        pending.receive_timestamp_ns,
-                                        config_.array_id,
-                                        pending.priority);
-                    }
-                }
-
-                // ── Phase 5: 归还未被使用的缓冲区 ───────────────────
-                // 被 PacketBuffer 包装的缓冲区已转移所有权无需处理，
-                // 这里只回收那些分配了但未被 recvmmsg 使用的多余缓冲区。
-                for (uint8_t *buffer : recv_buffers)
-                {
-                    if (buffer != nullptr)
-                    {
-                        packet_pool_->deallocate(buffer);
+                        break;
                     }
                 }
             }
@@ -746,6 +735,18 @@ namespace receiver
                 }
             }
 #endif
+        }
+
+        ArrayFaceReceiver::RuntimeStats ArrayFaceReceiver::get_runtime_stats() const
+        {
+            RuntimeStats stats{};
+            stats.array_id = config_.array_id;
+            stats.affinity_verified = affinity_verified_.load(std::memory_order_acquire);
+            if (packet_pool_)
+            {
+                stats.packet_pool = packet_pool_->get_statistics();
+            }
+            return stats;
         }
 
     } // namespace network

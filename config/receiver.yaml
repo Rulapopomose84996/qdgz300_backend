@@ -52,6 +52,9 @@ performance:
   prefetch_hints_enabled: true     # 启用预取提示
   qos_enabled: true                # 启用QoS优先级处理（心跳优先）
   heartbeat_max_queue_depth: 1000  # 心跳队列最大深度
+  packet_pool_mb_per_face: 64      # 每阵面PacketPool预算（MB）
+  recv_drain_rounds: 4             # 单次唤醒后最多连续drain socket queue的轮数
+  processing_cpu_affinity_map: [19, 20, 21] # 三阵面后处理线程绑核（CPU 19/20/21 @ Node1）
 
 # 原始 PCAP 旁路缓冲（只写 NVMe spool，不直接写 /data 归档盘）
 capture:

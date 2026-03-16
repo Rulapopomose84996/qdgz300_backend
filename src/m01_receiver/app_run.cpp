@@ -28,6 +28,7 @@
 #include "qdgz300/m01_receiver/pipeline/rx_stage.h"       // RxStage (SPSC 队列接入)
 #include "qdgz300/m01_receiver/protocol/protocol_types.h" // PacketType / CommonHeader
 #include "qdgz300/m01_receiver/signal_handler.h"          // g_running / g_reload_requested / 信号标志
+#include "qdgz300/common/numa_utils.h"
 
 // ── 标准库 ──────────────────────────────────────────────────────────
 #include <chrono>
@@ -35,6 +36,10 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+
+#if defined(__linux__) && defined(RECEIVER_HAS_LIBNUMA)
+#include <numa.h>
+#endif
 
 // =============================================================================
 // 匿名命名空间：文件内部辅助函数
@@ -225,6 +230,23 @@ namespace
         }
         return oss.str();
     }
+
+    void bind_processing_thread(int cpu_affinity, int numa_node)
+    {
+        if (cpu_affinity >= 0)
+        {
+            (void)qdgz300::bind_thread_to_cpu(cpu_affinity);
+        }
+#if defined(__linux__) && defined(RECEIVER_HAS_LIBNUMA)
+        if (numa_available() != -1)
+        {
+            (void)numa_run_on_node(numa_node);
+            numa_set_preferred(numa_node);
+        }
+#else
+        (void)numa_node;
+#endif
+    }
 } // namespace
 
 namespace receiver
@@ -273,14 +295,14 @@ namespace receiver
         }
 
         // ── 启动后续处理层线程（每阵面一个，从 SPSC 队列消费） ───────
-        // 处理线程不绑定 CPU 16-18，由 OS 调度到其他可用核心
         ctx.processing_running.store(true, std::memory_order_release);
         for (auto &fp : ctx.face_pipelines)
         {
             ctx.processing_threads.emplace_back(
-                [&fp, &ctx]()
+                [&fp, &ctx, numa_node = config.performance.numa_node]()
                 {
                     auto &metrics = monitoring::MetricsCollector::instance();
+                    bind_processing_thread(fp.processing_cpu_affinity, numa_node);
 
                     while (ctx.processing_running.load(std::memory_order_acquire))
                     {
@@ -310,7 +332,12 @@ namespace receiver
                         metrics.increment_pipeline_validate_ok();
 
                         // 类型分发 → 重组 → 重排（零拷贝：PacketBuffer 所有权随 dispatch 传递）
+                        const auto processing_begin = std::chrono::steady_clock::now();
                         fp.dispatcher->dispatch(pkt, std::move(env.packet_data));
+                        const auto processing_end = std::chrono::steady_clock::now();
+                        const auto processing_us = static_cast<uint64_t>(
+                            std::chrono::duration_cast<std::chrono::microseconds>(processing_end - processing_begin).count());
+                        metrics.observe_processing_latency(processing_us);
 
                         // 数据延迟计算
                         if (env.header.timestamp > 0)
@@ -525,10 +552,21 @@ namespace receiver
                 {
                     const auto rx_stats = fp.rx_stage->get_stats();
                     const auto queue_depth = fp.rx_stage->queue().size();
-                    // 队列深度和 drop 计数可用于运维监控和性能调优
-                    // 后续可将这些指标导出到 Prometheus
-                    (void)rx_stats;
-                    (void)queue_depth;
+                    metrics.set_face_rx_queue_depth(fp.array_id, queue_depth);
+                    metrics.set_face_rx_queue_high_watermark(fp.array_id, rx_stats.queue_high_watermark);
+                    metrics.set_face_rx_queue_drops(fp.array_id, rx_stats.queue_drops);
+                }
+            }
+
+            if (ctx.udp_receiver)
+            {
+                for (const auto &runtime : ctx.udp_receiver->get_face_runtime_stats())
+                {
+                    metrics.set_face_packet_pool_stats(
+                        runtime.array_id,
+                        runtime.packet_pool.total_size,
+                        runtime.packet_pool.available,
+                        runtime.packet_pool.fallback_alloc);
                 }
             }
 
@@ -618,6 +656,24 @@ namespace receiver
                          static_cast<unsigned long long>(stats.validate_ok),
                          static_cast<unsigned long long>(stats.enqueued),
                          static_cast<unsigned long long>(stats.queue_drops));
+                LOG_INFO("RxStage[face=%u]: queue_high_watermark=%zu processing_cpu=%d",
+                         static_cast<unsigned>(fp.array_id),
+                         stats.queue_high_watermark,
+                         fp.processing_cpu_affinity);
+            }
+        }
+
+        if (ctx.udp_receiver)
+        {
+            for (const auto &runtime : ctx.udp_receiver->get_face_runtime_stats())
+            {
+                LOG_INFO("PacketPool[face=%u]: total=%zu available=%zu allocated=%zu fallback_alloc=%zu affinity_verified=%s",
+                         static_cast<unsigned>(runtime.array_id),
+                         runtime.packet_pool.total_size,
+                         runtime.packet_pool.available,
+                         runtime.packet_pool.allocated,
+                         runtime.packet_pool.fallback_alloc,
+                         runtime.affinity_verified ? "true" : "false");
             }
         }
 

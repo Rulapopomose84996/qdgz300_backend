@@ -70,7 +70,9 @@ namespace receiver
             int cpu_affinity = 16;              ///< 收包线程绑定的 CPU 核心号
             bool source_filter_enabled = true;  ///< 是否启用源 ID 过滤（丢弃非预期 source_id 的包）
             size_t recv_batch_size = 64;        ///< recvmmsg 单次批量大小（上限 64）
+            size_t recv_drain_rounds = 4;       ///< 单次唤醒后最多连续 drain socket queue 的轮数
             size_t socket_rcvbuf_mb = 256;      ///< SO_RCVBUF 内核接收缓冲区大小（MB）
+            size_t packet_pool_mb = 64;         ///< 每阵面 PacketPool 预算（MB）
             bool enable_ip_freebind = false;    ///< 是否允许绑定到当前未配置在本机上的 IPv4 地址（Linux IP_FREEBIND）
             int numa_node = 1;                  ///< 内存分配绑定的 NUMA 节点
             bool prefetch_hints_enabled = true; ///< 是否启用 __builtin_prefetch 缓存预取
@@ -110,6 +112,12 @@ namespace receiver
             using CaptureHook = std::function<void(const uint8_t *, size_t, uint64_t)>;
             /// 抓包钩子提供者：返回当前有效的 CaptureHook 的 shared_ptr
             using CaptureHookProvider = std::function<std::shared_ptr<CaptureHook>()>;
+            struct RuntimeStats
+            {
+                uint8_t array_id{0};
+                bool affinity_verified{false};
+                PacketPool::Statistics packet_pool{};
+            };
 
             /**
              * @brief 构造单阵面接收器
@@ -148,6 +156,7 @@ namespace receiver
 
             uint8_t array_id() const { return config_.array_id; }        ///< 获取阵面编号
             uint16_t listen_port() const { return config_.listen_port; } ///< 获取监听端口
+            RuntimeStats get_runtime_stats() const;
 
         private:
             /**

@@ -60,8 +60,8 @@ namespace receiver
         class RxStage
         {
         public:
-            /// SPSC 队列容量（power-of-2，可存 8191 个信封）
-            static constexpr size_t QUEUE_CAPACITY = 8192;
+            /// SPSC 队列容量（power-of-2，可存 65535 个信封）
+            static constexpr size_t QUEUE_CAPACITY = 65536;
 
             /// 队列类型别名
             using Queue = qdgz300::SPSCQueue<RxEnvelope, QUEUE_CAPACITY>;
@@ -106,6 +106,7 @@ namespace receiver
                 uint64_t validate_ok; ///< 校验通过数
                 uint64_t enqueued;    ///< 成功入队数
                 uint64_t queue_drops; ///< 队列满丢弃数（drop-oldest 触发次数）
+                size_t queue_high_watermark; ///< 历史最高队列深度
             };
 
             /**
@@ -125,6 +126,7 @@ namespace receiver
             std::atomic<uint64_t> parse_ok_{0};
             std::atomic<uint64_t> validate_ok_{0};
             std::atomic<uint64_t> enqueued_{0};
+            std::atomic<size_t> queue_high_watermark_{0};
         };
 
     } // namespace pipeline

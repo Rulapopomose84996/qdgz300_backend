@@ -81,6 +81,7 @@ namespace receiver
                 "SIGHUP",
                 "SIGTERM",
                 "SIGINT"};
+            constexpr size_t FACE_METRIC_COUNT = 3;
 
             constexpr bool is_valid_packet_type_index(PacketTypeIndex idx)
             {
@@ -229,6 +230,12 @@ namespace receiver
             std::atomic<double> numa_local_memory_pct{0.0};
             std::atomic<size_t> heartbeat_queue_depth{0};
             std::atomic<int> heartbeat_state{0};
+            std::array<std::atomic<size_t>, FACE_METRIC_COUNT> face_rx_queue_depth{};
+            std::array<std::atomic<size_t>, FACE_METRIC_COUNT> face_rx_queue_high_watermark{};
+            std::array<std::atomic<uint64_t>, FACE_METRIC_COUNT> face_rx_queue_drops{};
+            std::array<std::atomic<size_t>, FACE_METRIC_COUNT> face_packet_pool_total{};
+            std::array<std::atomic<size_t>, FACE_METRIC_COUNT> face_packet_pool_available{};
+            std::array<std::atomic<uint64_t>, FACE_METRIC_COUNT> face_packet_pool_fallback_alloc{};
 
             std::array<std::atomic<uint64_t>, DATA_DELAY_BUCKET_COUNT + 1> data_delay_bucket_counts{};
             std::atomic<uint64_t> data_delay_count{0};
@@ -304,6 +311,34 @@ namespace receiver
             out << "# HELP " << name << ' ' << help << "\n";
             out << "# TYPE " << name << " gauge\n";
             out << name << ' ' << value << "\n";
+        }
+
+        static void append_face_gauge(std::ostringstream &out,
+                                      const std::string &name,
+                                      const std::string &help,
+                                      const std::array<std::atomic<size_t>, FACE_METRIC_COUNT> &values)
+        {
+            out << "# HELP " << name << ' ' << help << "\n";
+            out << "# TYPE " << name << " gauge\n";
+            for (size_t i = 0; i < FACE_METRIC_COUNT; ++i)
+            {
+                out << name << "{face=\"" << (i + 1) << "\"} "
+                    << values[i].load(std::memory_order_relaxed) << "\n";
+            }
+        }
+
+        static void append_face_counter(std::ostringstream &out,
+                                        const std::string &name,
+                                        const std::string &help,
+                                        const std::array<std::atomic<uint64_t>, FACE_METRIC_COUNT> &values)
+        {
+            out << "# HELP " << name << ' ' << help << "\n";
+            out << "# TYPE " << name << " counter\n";
+            for (size_t i = 0; i < FACE_METRIC_COUNT; ++i)
+            {
+                out << name << "{face=\"" << (i + 1) << "\"} "
+                    << values[i].load(std::memory_order_relaxed) << "\n";
+            }
         }
 
         static void append_histogram_double(std::ostringstream &out,
@@ -511,6 +546,30 @@ namespace receiver
                          "receiver_heartbeat_state",
                          "Heartbeat link state (0=DISCONNECTED,1=CONNECTING,2=CONNECTED)",
                          static_cast<double>(impl->heartbeat_state.load(std::memory_order_relaxed)));
+            append_face_gauge(out,
+                              "receiver_rx_queue_depth",
+                              "Current per-face RxStage queue depth",
+                              impl->face_rx_queue_depth);
+            append_face_gauge(out,
+                              "receiver_rx_queue_high_watermark",
+                              "Observed per-face RxStage queue high watermark",
+                              impl->face_rx_queue_high_watermark);
+            append_face_counter(out,
+                                "receiver_rx_queue_drops_total",
+                                "Per-face RxStage queue drop-oldest count",
+                                impl->face_rx_queue_drops);
+            append_face_gauge(out,
+                              "receiver_packet_pool_total_buffers",
+                              "Per-face PacketPool total buffer count",
+                              impl->face_packet_pool_total);
+            append_face_gauge(out,
+                              "receiver_packet_pool_available_buffers",
+                              "Per-face PacketPool available buffer count",
+                              impl->face_packet_pool_available);
+            append_face_counter(out,
+                                "receiver_packet_pool_fallback_alloc_total",
+                                "Per-face PacketPool fallback allocation count",
+                                impl->face_packet_pool_fallback_alloc);
 
             append_histogram_double(out,
                                     "receiver_data_delay_seconds_histogram",
@@ -881,6 +940,44 @@ namespace receiver
         void MetricsCollector::set_heartbeat_state(int state)
         {
             impl_->heartbeat_state.store(state, std::memory_order_relaxed);
+        }
+
+        void MetricsCollector::set_face_rx_queue_depth(uint8_t array_id, size_t depth)
+        {
+            if (array_id == 0 || array_id > FACE_METRIC_COUNT)
+            {
+                return;
+            }
+            impl_->face_rx_queue_depth[array_id - 1].store(depth, std::memory_order_relaxed);
+        }
+
+        void MetricsCollector::set_face_rx_queue_high_watermark(uint8_t array_id, size_t depth)
+        {
+            if (array_id == 0 || array_id > FACE_METRIC_COUNT)
+            {
+                return;
+            }
+            impl_->face_rx_queue_high_watermark[array_id - 1].store(depth, std::memory_order_relaxed);
+        }
+
+        void MetricsCollector::set_face_rx_queue_drops(uint8_t array_id, uint64_t drops)
+        {
+            if (array_id == 0 || array_id > FACE_METRIC_COUNT)
+            {
+                return;
+            }
+            impl_->face_rx_queue_drops[array_id - 1].store(drops, std::memory_order_relaxed);
+        }
+
+        void MetricsCollector::set_face_packet_pool_stats(uint8_t array_id, size_t total, size_t available, uint64_t fallback_alloc)
+        {
+            if (array_id == 0 || array_id > FACE_METRIC_COUNT)
+            {
+                return;
+            }
+            impl_->face_packet_pool_total[array_id - 1].store(total, std::memory_order_relaxed);
+            impl_->face_packet_pool_available[array_id - 1].store(available, std::memory_order_relaxed);
+            impl_->face_packet_pool_fallback_alloc[array_id - 1].store(fallback_alloc, std::memory_order_relaxed);
         }
 
         void MetricsCollector::observe_data_delay(double delay_seconds)

@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <set>
 #include <mutex>
 #include <memory>
 #include <vector>
@@ -63,6 +64,41 @@ namespace
         if (level == "ERROR")
             return receiver::monitoring::LogLevel::ERROR;
         return receiver::monitoring::LogLevel::INFO;
+    }
+
+    std::vector<int> resolve_processing_cpu_affinity_map(
+        const receiver::config::ReceiverConfig &config,
+        size_t num_faces)
+    {
+        if (config.performance.processing_cpu_affinity_map.size() == num_faces)
+        {
+            return config.performance.processing_cpu_affinity_map;
+        }
+
+        std::set<int> reserved_cpus(
+            config.network.cpu_affinity_map.begin(),
+            config.network.cpu_affinity_map.end());
+        std::vector<int> resolved;
+        resolved.reserve(num_faces);
+
+        for (int cpu = 16; cpu <= 31 && resolved.size() < num_faces; ++cpu)
+        {
+            if (reserved_cpus.find(cpu) != reserved_cpus.end())
+            {
+                continue;
+            }
+            resolved.push_back(cpu);
+        }
+
+        while (resolved.size() < num_faces)
+        {
+            const int fallback_cpu = config.network.cpu_affinity_map.empty()
+                                         ? static_cast<int>(16 + resolved.size())
+                                         : config.network.cpu_affinity_map[resolved.size() % config.network.cpu_affinity_map.size()];
+            resolved.push_back(fallback_cpu);
+        }
+
+        return resolved;
     }
 
 } // namespace
@@ -134,7 +170,9 @@ namespace receiver
         udp_config.listen_port = config.network.listen_port;
         udp_config.bind_ip = config.network.bind_ip;
         udp_config.recv_batch_size = config.network.recvmmsg_batch_size;
+        udp_config.recv_drain_rounds = config.performance.recv_drain_rounds;
         udp_config.socket_rcvbuf_mb = config.network.socket_rcvbuf_mb;
+        udp_config.packet_pool_mb_per_face = config.performance.packet_pool_mb_per_face;
         udp_config.enable_so_reuseport = false;
         udp_config.enable_ip_freebind = config.network.enable_ip_freebind;
         udp_config.worker_threads = 0;
@@ -178,6 +216,8 @@ namespace receiver
             udp_config.array_faces.push_back(fallback);
         }
 
+        const std::vector<int> processing_cpu_map = resolve_processing_cpu_affinity_map(config, num_faces);
+
         // ══════════════════════════════════════════════════════════════
         // Phase 5: 为每个阵面构建分层管线
         //
@@ -191,6 +231,7 @@ namespace receiver
         {
             FacePipeline &fp = ctx.face_pipelines[face_idx];
             fp.array_id = static_cast<uint8_t>(face_idx + 1);
+            fp.processing_cpu_affinity = processing_cpu_map[face_idx];
 
             // ── 5a. 序号重排器 (Reorderer) —— 后续处理层 ──────────────
             pipeline::ReorderConfig reorder_config;

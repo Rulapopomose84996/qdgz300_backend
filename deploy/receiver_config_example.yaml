@@ -54,3 +54,6 @@ performance:
   prefetch_hints_enabled: true
   qos_enabled: true
   heartbeat_max_queue_depth: 1000
+  packet_pool_mb_per_face: 64
+  recv_drain_rounds: 4
+  processing_cpu_affinity_map: [19, 20, 21]

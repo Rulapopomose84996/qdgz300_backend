@@ -90,6 +90,9 @@ namespace receiver
                 bool qos_enabled = true;
                 uint32_t rma_session_timeout_ms = 30000;
                 size_t heartbeat_max_queue_depth = 1000;
+                size_t packet_pool_mb_per_face = 64;
+                size_t recv_drain_rounds = 4;
+                std::vector<int> processing_cpu_affinity_map{};
             } performance;
 
             struct Delivery

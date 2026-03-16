@@ -132,7 +132,9 @@ namespace receiver
                 face_config.cpu_affinity = binding.cpu_affinity;
                 face_config.source_filter_enabled = binding.source_filter_enabled;
                 face_config.recv_batch_size = config_.recv_batch_size; // 全局共享参数
+                face_config.recv_drain_rounds = config_.recv_drain_rounds;
                 face_config.socket_rcvbuf_mb = config_.socket_rcvbuf_mb;
+                face_config.packet_pool_mb = config_.packet_pool_mb_per_face;
                 face_config.enable_ip_freebind = config_.enable_ip_freebind;
                 face_config.numa_node = config_.numa_node;
                 face_config.prefetch_hints_enabled = config_.prefetch_hints_enabled;
@@ -239,6 +241,25 @@ namespace receiver
             }
             // 卸载钩子
             std::atomic_store_explicit(&capture_hook_, std::shared_ptr<CaptureHook>{}, std::memory_order_release);
+        }
+
+        std::vector<ArrayFaceRuntimeStats> UdpReceiver::get_face_runtime_stats() const
+        {
+            std::vector<ArrayFaceRuntimeStats> snapshots;
+            snapshots.reserve(impl_->array_receivers.size());
+            for (const auto &receiver : impl_->array_receivers)
+            {
+                if (!receiver)
+                {
+                    continue;
+                }
+                const auto runtime = receiver->get_runtime_stats();
+                snapshots.push_back(ArrayFaceRuntimeStats{
+                    runtime.array_id,
+                    runtime.affinity_verified,
+                    runtime.packet_pool});
+            }
+            return snapshots;
         }
 
     } // namespace network

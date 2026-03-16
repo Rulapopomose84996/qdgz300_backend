@@ -171,6 +171,9 @@ namespace receiver
                 assign_if_present(performance, "qos_enabled", cfg.performance.qos_enabled);
                 assign_if_present(performance, "rma_session_timeout_ms", cfg.performance.rma_session_timeout_ms);
                 assign_if_present(performance, "heartbeat_max_queue_depth", cfg.performance.heartbeat_max_queue_depth);
+                assign_if_present(performance, "packet_pool_mb_per_face", cfg.performance.packet_pool_mb_per_face);
+                assign_if_present(performance, "recv_drain_rounds", cfg.performance.recv_drain_rounds);
+                assign_sequence_if_present(performance, "processing_cpu_affinity_map", cfg.performance.processing_cpu_affinity_map);
 
                 const YAML::Node delivery = root["delivery"];
                 assign_if_present(delivery, "method", cfg.delivery.method);
@@ -374,6 +377,37 @@ namespace receiver
             if (config.performance.heartbeat_max_queue_depth == 0 || config.performance.heartbeat_max_queue_depth > 100000)
             {
                 return false;
+            }
+            if (config.performance.packet_pool_mb_per_face < 32 || config.performance.packet_pool_mb_per_face > 512)
+            {
+                return false;
+            }
+            if (config.performance.recv_drain_rounds == 0 || config.performance.recv_drain_rounds > 16)
+            {
+                return false;
+            }
+            if (!config.performance.processing_cpu_affinity_map.empty())
+            {
+                std::unordered_set<int> unique_processing_cpus(
+                    config.performance.processing_cpu_affinity_map.begin(),
+                    config.performance.processing_cpu_affinity_map.end());
+                if (unique_processing_cpus.size() != config.performance.processing_cpu_affinity_map.size())
+                {
+                    return false;
+                }
+                const auto min_processing_cpu = *std::min_element(
+                    config.performance.processing_cpu_affinity_map.begin(),
+                    config.performance.processing_cpu_affinity_map.end());
+                if (min_processing_cpu < 0)
+                {
+                    return false;
+                }
+
+                const size_t expected_faces = !config.network.bind_ips.empty() ? config.network.bind_ips.size() : size_t{1};
+                if (config.performance.processing_cpu_affinity_map.size() != expected_faces)
+                {
+                    return false;
+                }
             }
             if (config.delivery.reconnect_interval_ms == 0)
             {

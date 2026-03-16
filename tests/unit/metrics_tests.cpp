@@ -153,6 +153,10 @@ TEST(MetricsTests, ExposesRequiredPrometheusMetrics)
     metrics.set_numa_local_memory_pct(99.5);
     metrics.set_heartbeat_queue_depth(12);
     metrics.set_heartbeat_state(2);
+    metrics.set_face_rx_queue_depth(1, 10);
+    metrics.set_face_rx_queue_high_watermark(1, 24);
+    metrics.set_face_rx_queue_drops(1, 3);
+    metrics.set_face_packet_pool_stats(1, 1024, 900, 2);
     metrics.observe_packet_pool_allocation_latency_ns(800);
     metrics.observe_packet_pool_allocation_latency_ns(1200);
     metrics.collect_system_metrics();
@@ -192,6 +196,12 @@ TEST(MetricsTests, ExposesRequiredPrometheusMetrics)
     EXPECT_NE(payload.find("receiver_memory_rss_bytes"), std::string::npos);
     EXPECT_NE(payload.find("numa_local_memory_pct"), std::string::npos);
     EXPECT_NE(payload.find("heartbeat_queue_depth"), std::string::npos);
+    EXPECT_NE(payload.find("receiver_rx_queue_depth{face=\"1\"}"), std::string::npos);
+    EXPECT_NE(payload.find("receiver_rx_queue_high_watermark{face=\"1\"}"), std::string::npos);
+    EXPECT_NE(payload.find("receiver_rx_queue_drops_total{face=\"1\"}"), std::string::npos);
+    EXPECT_NE(payload.find("receiver_packet_pool_total_buffers{face=\"1\"}"), std::string::npos);
+    EXPECT_NE(payload.find("receiver_packet_pool_available_buffers{face=\"1\"}"), std::string::npos);
+    EXPECT_NE(payload.find("receiver_packet_pool_fallback_alloc_total{face=\"1\"}"), std::string::npos);
     EXPECT_NE(payload.find("packet_pool_allocation_latency_ns_bucket"), std::string::npos);
     EXPECT_NE(payload.find("receiver_heartbeat_state"), std::string::npos);
     EXPECT_NE(payload.find("qdgz300_spool_mover_archived_total 3"), std::string::npos);

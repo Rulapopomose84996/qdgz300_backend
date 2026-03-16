@@ -137,6 +137,10 @@ namespace receiver
             void set_numa_local_memory_pct(double pct);
             void set_heartbeat_queue_depth(size_t depth);
             void set_heartbeat_state(int state);
+            void set_face_rx_queue_depth(uint8_t array_id, size_t depth);
+            void set_face_rx_queue_high_watermark(uint8_t array_id, size_t depth);
+            void set_face_rx_queue_drops(uint8_t array_id, uint64_t drops);
+            void set_face_packet_pool_stats(uint8_t array_id, size_t total, size_t available, uint64_t fallback_alloc);
 
             // ==================== Histogram指标 ====================
 

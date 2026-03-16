@@ -73,18 +73,19 @@ namespace receiver
      *
      * 分层设计：
      * - 实时接收层 (rx_stage)：运行在 CPU 16/17/18，仅做 parse → validate → SPSC push
-     * - 后续处理层 (dispatcher/reassembler/reorderer)：运行在独立处理线程，无指定核心
+     * - 后续处理层 (dispatcher/reassembler/reorderer)：运行在独立处理线程，固定到数据面核心
      *
      * 两层之间通过 RxStage 内置的 SPSC 队列解耦。
      */
     struct FacePipeline
     {
         uint8_t array_id{0}; ///< 阵面编号（1~3）
+        int processing_cpu_affinity{-1}; ///< 后续处理线程绑定的 CPU 核心
 
         // ── 实时接收层（CPU 16/17/18 热路径） ────────────────────
         std::unique_ptr<pipeline::RxStage> rx_stage; ///< 实时接收（parse + validate + SPSC 入队）
 
-        // ── 后续处理层（独立处理线程，无指定核心） ────────────────
+        // ── 后续处理层（独立处理线程，固定数据面核心） ─────────────
         std::unique_ptr<pipeline::Dispatcher> dispatcher;   ///< 类型分发器
         std::unique_ptr<pipeline::Reassembler> reassembler; ///< 分片重组器
         std::unique_ptr<pipeline::Reorderer> reorderer;     ///< 序号重排器

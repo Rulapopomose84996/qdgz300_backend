@@ -33,6 +33,10 @@ TEST(ConfigManagerTests, LoadValidConfig)
     ofs << "  cpu_affinity_map: [16, 17, 18]\n";
     ofs << "  source_filter_enabled: true\n";
     ofs << "  recv_threads: 2\n";
+    ofs << "performance:\n";
+    ofs << "  packet_pool_mb_per_face: 128\n";
+    ofs << "  recv_drain_rounds: 6\n";
+    ofs << "  processing_cpu_affinity_map: [19, 20, 21]\n";
     ofs << "reassembly:\n";
     ofs << "  max_contexts: 2048\n";
     ofs << "control_reliability:\n";
@@ -87,6 +91,12 @@ TEST(ConfigManagerTests, LoadValidConfig)
     EXPECT_EQ(cfg.network.cpu_affinity_map[1], 17);
     EXPECT_EQ(cfg.network.cpu_affinity_map[2], 18);
     EXPECT_TRUE(cfg.network.source_filter_enabled);
+    EXPECT_EQ(cfg.performance.packet_pool_mb_per_face, 128u);
+    EXPECT_EQ(cfg.performance.recv_drain_rounds, 6u);
+    ASSERT_EQ(cfg.performance.processing_cpu_affinity_map.size(), 3u);
+    EXPECT_EQ(cfg.performance.processing_cpu_affinity_map[0], 19);
+    EXPECT_EQ(cfg.performance.processing_cpu_affinity_map[1], 20);
+    EXPECT_EQ(cfg.performance.processing_cpu_affinity_map[2], 21);
     EXPECT_EQ(cfg.reassembly.max_contexts, 2048u);
     EXPECT_EQ(cfg.control_reliability.rto_ms, 2500u);
     EXPECT_EQ(cfg.control_reliability.max_retry, 3u);
@@ -158,6 +168,16 @@ TEST(ConfigManagerTests, ValidateGoodConfig)
     cfg.capture.max_files = 10;
     EXPECT_TRUE(ConfigManager::validate(cfg));
 
+    cfg.performance.packet_pool_mb_per_face = 16;
+    EXPECT_FALSE(ConfigManager::validate(cfg));
+    cfg.performance.packet_pool_mb_per_face = 64;
+    cfg.performance.recv_drain_rounds = 0;
+    EXPECT_FALSE(ConfigManager::validate(cfg));
+    cfg.performance.recv_drain_rounds = 4;
+    cfg.performance.processing_cpu_affinity_map = {19, 20};
+    EXPECT_FALSE(ConfigManager::validate(cfg));
+    cfg.performance.processing_cpu_affinity_map.clear();
+
     cfg.capture.archive_max_files = 0;
     EXPECT_FALSE(ConfigManager::validate(cfg));
     cfg.capture.archive_max_files = 256;
@@ -212,6 +232,9 @@ TEST(ConfigManagerTests, DefaultValues)
     EXPECT_EQ(cfg.control_reliability.rto_ms, 2500u);
     EXPECT_EQ(cfg.control_reliability.max_retry, 3u);
     EXPECT_EQ(cfg.control_reliability.dup_cmd_cache_size, 1000u);
+    EXPECT_EQ(cfg.performance.packet_pool_mb_per_face, 64u);
+    EXPECT_EQ(cfg.performance.recv_drain_rounds, 4u);
+    EXPECT_TRUE(cfg.performance.processing_cpu_affinity_map.empty());
     EXPECT_EQ(cfg.queue.rawcpi_q_capacity, 64u);
     EXPECT_EQ(cfg.queue.rawcpi_q_slot_size_mb, 2u);
     EXPECT_TRUE(cfg.consumer.print_summary);
