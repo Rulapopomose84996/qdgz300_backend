@@ -94,7 +94,6 @@ namespace fpga_emulator
             packet[i] = static_cast<uint8_t>(i & 0xFFu);
         }
 
-        append_crc32c(packet);
         return packet;
     }
 
