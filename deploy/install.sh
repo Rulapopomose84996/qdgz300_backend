@@ -112,14 +112,17 @@ main() {
 log "Installing helper scripts"
 install -m 0755 "${ROOT_DIR}/tools/nic_tuning.sh" "${SCRIPT_DIR}/nic_tuning.sh"
 install -m 0755 "${ROOT_DIR}/tools/cpu_performance.sh" "${SCRIPT_DIR}/cpu_performance.sh"
+install -m 0755 "${ROOT_DIR}/tools/pcap_spool_mover.sh" "${SCRIPT_DIR}/pcap_spool_mover.sh"
 install -m 0755 "${ROOT_DIR}/tools/nic_tuning.sh" "/usr/local/bin/nic-tuning.sh"
 install -m 0755 "${ROOT_DIR}/tools/cpu_performance.sh" "/usr/local/bin/cpu-performance.sh"
+install -m 0755 "${ROOT_DIR}/tools/pcap_spool_mover.sh" "/usr/local/bin/qdgz300-spool-mover.sh"
 
   log "Installing runtime config templates"
   install_service_config
 
   log "Installing systemd and sysctl assets"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/qdgz300-receiver.service" "${SYSTEMD_DIR}/${SERVICE_NAME}.service"
+  install -m 0644 "${ROOT_DIR}/deploy/systemd/qdgz300-spool-mover.service" "${SYSTEMD_DIR}/qdgz300-spool-mover.service"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/qdgz300-sysctl.service" "${SYSTEMD_DIR}/qdgz300-sysctl.service"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/nic-optimization.service" "${SYSTEMD_DIR}/nic-optimization.service"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/cpu-performance.service" "${SYSTEMD_DIR}/cpu-performance.service"
@@ -146,12 +149,12 @@ Service file:
 Next steps:
   1. Edit runtime config: ${CONFIG_DIR}/receiver.yaml
   2. Enable sysctl/tuning services:
-     sudo systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service
+     sudo systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-spool-mover.service
   3. Enable receiver service:
      sudo systemctl enable ${SERVICE_NAME}.service
   4. Start services:
      sudo systemctl start qdgz300-sysctl.service nic-optimization.service cpu-performance.service
-     sudo systemctl start ${SERVICE_NAME}.service
+     sudo systemctl start ${SERVICE_NAME}.service qdgz300-spool-mover.service
   5. Check status:
      sudo systemctl status ${SERVICE_NAME}.service
   6. Roll back manually if needed:

@@ -115,6 +115,12 @@ sudo bash scripts/ops/tail_logs.sh
     └── <timestamp>/
 ```
 
+PCAP 旁路落盘目录：
+
+- NVMe spool：`/opt/qdgz300_backend/data/receiver_spool`
+- HDD archive：`/data/qdgz300/receiver/archive`
+- 后台搬移：`qdgz300-spool-mover.service`
+
 ## 5. 升级与回滚
 
 升级：
@@ -167,5 +173,6 @@ sudo cp -a /opt/qdgz300_backend/releases/<timestamp>/config/. /opt/qdgz300_backe
 cd /home/devuser/WorkSpace/qdgz300_backend
 sudo bash scripts/ops/check_services.sh
 sudo systemctl status qdgz300-receiver.service --no-pager
+sudo systemctl status qdgz300-spool-mover.service --no-pager
 sudo journalctl -u qdgz300-receiver.service -n 50 --no-pager
 ```

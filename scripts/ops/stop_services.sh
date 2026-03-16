@@ -11,4 +11,4 @@ EOF
 
 [[ "${1:-}" == "--help" ]] && { usage; exit 0; }
 
-systemctl stop qdgz300-receiver.service
+systemctl stop qdgz300-spool-mover.service qdgz300-receiver.service

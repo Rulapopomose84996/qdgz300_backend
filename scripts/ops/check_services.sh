@@ -15,3 +15,4 @@ systemctl status qdgz300-sysctl.service --no-pager
 systemctl status nic-optimization.service --no-pager
 systemctl status cpu-performance.service --no-pager
 systemctl status qdgz300-receiver.service --no-pager
+systemctl status qdgz300-spool-mover.service --no-pager

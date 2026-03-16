@@ -11,4 +11,4 @@ EOF
 
 [[ "${1:-}" == "--help" ]] && { usage; exit 0; }
 
-systemctl start qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-receiver.service
+systemctl start qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-receiver.service qdgz300-spool-mover.service
