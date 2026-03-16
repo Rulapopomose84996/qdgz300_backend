@@ -2,6 +2,7 @@
 #include <array>
 #include <chrono>
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <mutex>
@@ -157,6 +158,37 @@ namespace receiver
                     }
                 }
                 return 0;
+            }
+
+            std::string external_metrics_file_path()
+            {
+                if (const char *override_path = std::getenv("QDGZ300_EXTERNAL_METRICS_FILE"))
+                {
+                    if (*override_path != '\0')
+                    {
+                        return override_path;
+                    }
+                }
+                return "/opt/qdgz300_backend/data/metrics/qdgz300_spool_mover.prom";
+            }
+
+            std::string read_external_metrics_payload()
+            {
+                const std::string path = external_metrics_file_path();
+                std::ifstream input(path);
+                if (!input.is_open())
+                {
+                    return {};
+                }
+
+                std::ostringstream buffer;
+                buffer << input.rdbuf();
+                std::string payload = buffer.str();
+                if (!payload.empty() && payload.back() != '\n')
+                {
+                    payload.push_back('\n');
+                }
+                return payload;
             }
         }
 
@@ -543,6 +575,8 @@ namespace receiver
                 append_gauge(out, "receiver_processing_latency_us_p99", "Approximate P99 processing latency", p99);
                 append_gauge(out, "receiver_processing_latency_us_p999", "Approximate P99.9 processing latency", p999);
             }
+
+            out << read_external_metrics_payload();
 
             return out.str();
         }
