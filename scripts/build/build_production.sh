@@ -57,6 +57,21 @@ check_file() {
   [[ -f "$1" ]] || die "Missing required file: $1"
 }
 
+reset_build_dir_if_cache_mismatched() {
+  local cache_file="${BUILD_DIR}/CMakeCache.txt"
+  local cached_source_dir=""
+
+  [[ -f "${cache_file}" ]] || return
+
+  cached_source_dir="$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "${cache_file}" | head -n 1)"
+  [[ -n "${cached_source_dir}" ]] || return
+
+  if [[ "${cached_source_dir}" != "${ROOT_DIR}" ]]; then
+    log "Detected stale CMake cache from ${cached_source_dir}; removing ${BUILD_DIR}"
+    rm -rf "${BUILD_DIR}"
+  fi
+}
+
 log "Step 1/5: Validate production build environment"
 [[ "$(uname -s)" == "Linux" ]] || die "Production build must run on Linux."
 check_command cmake
@@ -87,6 +102,7 @@ fi
 env "${prepare_env[@]}" bash "${ROOT_DIR}/scripts/prepare_native_deps.sh"
 
 log "Step 3/5: Configure native build"
+reset_build_dir_if_cache_mismatched
 cmake_args=(
   -S "${ROOT_DIR}"
   -B "${BUILD_DIR}"
