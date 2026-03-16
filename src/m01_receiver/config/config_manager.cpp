@@ -187,6 +187,8 @@ namespace receiver
                     assign_if_present(capture, "output_dir", cfg.capture.spool_dir);
                 }
                 assign_if_present(capture, "archive_dir", cfg.capture.archive_dir);
+                assign_if_present(capture, "spool_low_watermark_pct", cfg.capture.spool_low_watermark_pct);
+                assign_if_present(capture, "archive_low_watermark_pct", cfg.capture.archive_low_watermark_pct);
                 assign_if_present(capture, "archive_max_files", cfg.capture.archive_max_files);
                 assign_if_present(capture, "archive_max_age_days", cfg.capture.archive_max_age_days);
                 assign_if_present(capture, "max_file_size_mb", cfg.capture.max_file_size_mb);
@@ -386,6 +388,14 @@ namespace receiver
                 return false;
             }
             if (config.capture.archive_max_files == 0 || config.capture.archive_max_files > 100000)
+            {
+                return false;
+            }
+            if (config.capture.spool_low_watermark_pct == 0 || config.capture.spool_low_watermark_pct > 99)
+            {
+                return false;
+            }
+            if (config.capture.archive_low_watermark_pct == 0 || config.capture.archive_low_watermark_pct > 99)
             {
                 return false;
             }

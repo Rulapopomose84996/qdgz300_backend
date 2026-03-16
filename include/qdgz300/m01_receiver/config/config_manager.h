@@ -106,6 +106,8 @@ namespace receiver
                 bool enabled = false;
                 std::string spool_dir = "/var/spool/qdgz300/receiver";
                 std::string archive_dir = "/data/qdgz300/receiver";
+                uint32_t spool_low_watermark_pct = 10;
+                uint32_t archive_low_watermark_pct = 10;
                 size_t archive_max_files = 256;
                 uint32_t archive_max_age_days = 7;
                 size_t max_file_size_mb = 1024;

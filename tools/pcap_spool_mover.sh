@@ -8,6 +8,8 @@ DEFAULT_ARCHIVE_DIR="${QDGZ300_DEFAULT_ARCHIVE_DIR:-/data/qdgz300/receiver/archi
 DEFAULT_ARCHIVE_MAX_FILES="${QDGZ300_DEFAULT_ARCHIVE_MAX_FILES:-256}"
 DEFAULT_ARCHIVE_MAX_AGE_DAYS="${QDGZ300_DEFAULT_ARCHIVE_MAX_AGE_DAYS:-7}"
 DEFAULT_METRICS_DIR="${QDGZ300_DEFAULT_METRICS_DIR:-/opt/qdgz300_backend/data/metrics}"
+DEFAULT_SPOOL_LOW_WATERMARK_PCT="${QDGZ300_DEFAULT_SPOOL_LOW_WATERMARK_PCT:-10}"
+DEFAULT_ARCHIVE_LOW_WATERMARK_PCT="${QDGZ300_DEFAULT_ARCHIVE_LOW_WATERMARK_PCT:-10}"
 POLL_INTERVAL_SEC="${QDGZ300_SPOOL_POLL_INTERVAL_SEC:-5}"
 LOG_PREFIX="[qdgz300-spool-mover]"
 
@@ -19,6 +21,12 @@ last_success_ts=0
 last_failure_ts=0
 last_spool_files=0
 last_archive_files=0
+last_spool_total_bytes=0
+last_spool_available_bytes=0
+last_archive_total_bytes=0
+last_archive_available_bytes=0
+spool_low_watermark_active=0
+archive_low_watermark_active=0
 
 log() {
   printf '%s %s\n' "${LOG_PREFIX}" "$*"
@@ -39,6 +47,51 @@ record_failure() {
   archive_failures_total=$((archive_failures_total + 1))
   last_failure_ts="$(date +%s)"
   warn "$*"
+}
+
+check_disk_watermark() {
+  local label="$1"
+  local path="$2"
+  local threshold_pct="$3"
+  local total_bytes_ref_name="$4"
+  local avail_bytes_ref_name="$5"
+  local active_ref_name="$6"
+
+  local df_line
+  df_line="$(df -P -B1 "${path}" 2>/dev/null | awk 'NR==2 {print $2 " " $4}')"
+  if [[ -z "${df_line}" ]]; then
+    record_failure "failed to read disk usage for ${label} path ${path}"
+    return 1
+  fi
+
+  local total_bytes available_bytes
+  read -r total_bytes available_bytes <<< "${df_line}"
+  printf -v "${total_bytes_ref_name}" '%s' "${total_bytes}"
+  printf -v "${avail_bytes_ref_name}" '%s' "${available_bytes}"
+
+  if [[ ! "${threshold_pct}" =~ ^[0-9]+$ ]] || (( threshold_pct <= 0 )) || (( threshold_pct >= 100 )); then
+    return 0
+  fi
+
+  local active_value=0
+  if (( total_bytes > 0 )); then
+    local threshold_bytes=$(( total_bytes * threshold_pct / 100 ))
+    if (( available_bytes <= threshold_bytes )); then
+      active_value=1
+    fi
+  fi
+
+  local previous_value
+  previous_value="${!active_ref_name}"
+  printf -v "${active_ref_name}" '%s' "${active_value}"
+
+  if (( active_value == 1 && previous_value == 0 )); then
+    warn "${label} disk low watermark triggered: available_bytes=${available_bytes} total_bytes=${total_bytes} threshold_pct=${threshold_pct} path=${path}"
+  elif (( active_value == 0 && previous_value == 1 )); then
+    log "${label} disk low watermark recovered: available_bytes=${available_bytes} total_bytes=${total_bytes} threshold_pct=${threshold_pct} path=${path}"
+  fi
+
+  return 0
 }
 
 read_config_value() {
@@ -106,6 +159,24 @@ qdgz300_spool_mover_spool_files ${last_spool_files}
 # HELP qdgz300_spool_mover_archive_files Current number of files in archive directory.
 # TYPE qdgz300_spool_mover_archive_files gauge
 qdgz300_spool_mover_archive_files ${last_archive_files}
+# HELP qdgz300_spool_mover_spool_total_bytes Total bytes of filesystem containing spool directory.
+# TYPE qdgz300_spool_mover_spool_total_bytes gauge
+qdgz300_spool_mover_spool_total_bytes ${last_spool_total_bytes}
+# HELP qdgz300_spool_mover_spool_available_bytes Available bytes of filesystem containing spool directory.
+# TYPE qdgz300_spool_mover_spool_available_bytes gauge
+qdgz300_spool_mover_spool_available_bytes ${last_spool_available_bytes}
+# HELP qdgz300_spool_mover_archive_total_bytes Total bytes of filesystem containing archive directory.
+# TYPE qdgz300_spool_mover_archive_total_bytes gauge
+qdgz300_spool_mover_archive_total_bytes ${last_archive_total_bytes}
+# HELP qdgz300_spool_mover_archive_available_bytes Available bytes of filesystem containing archive directory.
+# TYPE qdgz300_spool_mover_archive_available_bytes gauge
+qdgz300_spool_mover_archive_available_bytes ${last_archive_available_bytes}
+# HELP qdgz300_spool_mover_spool_low_watermark_active Whether spool disk is below configured low watermark.
+# TYPE qdgz300_spool_mover_spool_low_watermark_active gauge
+qdgz300_spool_mover_spool_low_watermark_active ${spool_low_watermark_active}
+# HELP qdgz300_spool_mover_archive_low_watermark_active Whether archive disk is below configured low watermark.
+# TYPE qdgz300_spool_mover_archive_low_watermark_active gauge
+qdgz300_spool_mover_archive_low_watermark_active ${archive_low_watermark_active}
 EOF
 
   mv -f "${temp_file}" "${metrics_file}"
@@ -209,6 +280,8 @@ main_loop() {
   local archive_max_files="$3"
   local archive_max_age_days="$4"
   local metrics_dir="$5"
+  local spool_low_watermark_pct="$6"
+  local archive_low_watermark_pct="$7"
 
   if ! install -d -m 0755 "${spool_dir}" "${archive_dir}" "${metrics_dir}"; then
     record_failure "failed to prepare mover directories"
@@ -225,6 +298,8 @@ main_loop() {
     done
 
     apply_archive_retention "${archive_dir}" "${archive_max_files}" "${archive_max_age_days}"
+    check_disk_watermark "spool" "${spool_dir}" "${spool_low_watermark_pct}" "last_spool_total_bytes" "last_spool_available_bytes" "spool_low_watermark_active" || true
+    check_disk_watermark "archive" "${archive_dir}" "${archive_low_watermark_pct}" "last_archive_total_bytes" "last_archive_available_bytes" "archive_low_watermark_active" || true
     write_metrics "${metrics_dir}" "${spool_dir}" "${archive_dir}"
 
     sleep "${POLL_INTERVAL_SEC}"
@@ -233,22 +308,27 @@ main_loop() {
 
 main() {
   local spool_dir archive_dir archive_max_files archive_max_age_days metrics_dir
+  local spool_low_watermark_pct archive_low_watermark_pct
   spool_dir="$(trim "$(read_config_value "spool_dir")")"
   archive_dir="$(trim "$(read_config_value "archive_dir")")"
+  spool_low_watermark_pct="$(trim "$(read_config_value "spool_low_watermark_pct")")"
+  archive_low_watermark_pct="$(trim "$(read_config_value "archive_low_watermark_pct")")"
   archive_max_files="$(trim "$(read_config_value "archive_max_files")")"
   archive_max_age_days="$(trim "$(read_config_value "archive_max_age_days")")"
   metrics_dir="$(trim "$(read_config_value "metrics_dir")")"
 
   [[ -n "${spool_dir}" ]] || spool_dir="${DEFAULT_SPOOL_DIR}"
   [[ -n "${archive_dir}" ]] || archive_dir="${DEFAULT_ARCHIVE_DIR}"
+  [[ -n "${spool_low_watermark_pct}" ]] || spool_low_watermark_pct="${DEFAULT_SPOOL_LOW_WATERMARK_PCT}"
+  [[ -n "${archive_low_watermark_pct}" ]] || archive_low_watermark_pct="${DEFAULT_ARCHIVE_LOW_WATERMARK_PCT}"
   [[ -n "${archive_max_files}" ]] || archive_max_files="${DEFAULT_ARCHIVE_MAX_FILES}"
   [[ -n "${archive_max_age_days}" ]] || archive_max_age_days="${DEFAULT_ARCHIVE_MAX_AGE_DAYS}"
   [[ -n "${metrics_dir}" ]] || metrics_dir="${DEFAULT_METRICS_DIR}"
 
-  log "start with config=${CONFIG_FILE} spool_dir=${spool_dir} archive_dir=${archive_dir} archive_max_files=${archive_max_files} archive_max_age_days=${archive_max_age_days} metrics_dir=${metrics_dir} interval=${POLL_INTERVAL_SEC}s"
+  log "start with config=${CONFIG_FILE} spool_dir=${spool_dir} archive_dir=${archive_dir} spool_low_watermark_pct=${spool_low_watermark_pct} archive_low_watermark_pct=${archive_low_watermark_pct} archive_max_files=${archive_max_files} archive_max_age_days=${archive_max_age_days} metrics_dir=${metrics_dir} interval=${POLL_INTERVAL_SEC}s"
 
   cd /
-  main_loop "${spool_dir}" "${archive_dir}" "${archive_max_files}" "${archive_max_age_days}" "${metrics_dir}"
+  main_loop "${spool_dir}" "${archive_dir}" "${archive_max_files}" "${archive_max_age_days}" "${metrics_dir}" "${spool_low_watermark_pct}" "${archive_low_watermark_pct}"
 }
 
 main "$@"

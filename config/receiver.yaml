@@ -58,6 +58,8 @@ capture:
   enabled: false
   spool_dir: "/var/spool/qdgz300/receiver"
   archive_dir: "/data/qdgz300/receiver"
+  spool_low_watermark_pct: 10
+  archive_low_watermark_pct: 10
   archive_max_files: 256
   archive_max_age_days: 7
   max_file_size_mb: 1024

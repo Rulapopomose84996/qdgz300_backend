@@ -48,6 +48,8 @@ TEST(ConfigManagerTests, LoadValidConfig)
     ofs << "  enabled: true\n";
     ofs << "  spool_dir: /tmp/receiver-spool\n";
     ofs << "  archive_dir: /data/receiver-archive\n";
+    ofs << "  spool_low_watermark_pct: 15\n";
+    ofs << "  archive_low_watermark_pct: 20\n";
     ofs << "  archive_max_files: 12\n";
     ofs << "  archive_max_age_days: 14\n";
     ofs << "  max_file_size_mb: 128\n";
@@ -93,6 +95,8 @@ TEST(ConfigManagerTests, LoadValidConfig)
     EXPECT_TRUE(cfg.capture.enabled);
     EXPECT_EQ(cfg.capture.spool_dir, "/tmp/receiver-spool");
     EXPECT_EQ(cfg.capture.archive_dir, "/data/receiver-archive");
+    EXPECT_EQ(cfg.capture.spool_low_watermark_pct, 15u);
+    EXPECT_EQ(cfg.capture.archive_low_watermark_pct, 20u);
     EXPECT_EQ(cfg.capture.archive_max_files, 12u);
     EXPECT_EQ(cfg.capture.archive_max_age_days, 14u);
     EXPECT_EQ(cfg.capture.max_file_size_mb, 128u);
@@ -157,6 +161,12 @@ TEST(ConfigManagerTests, ValidateGoodConfig)
     cfg.capture.archive_max_files = 0;
     EXPECT_FALSE(ConfigManager::validate(cfg));
     cfg.capture.archive_max_files = 256;
+    cfg.capture.spool_low_watermark_pct = 0;
+    EXPECT_FALSE(ConfigManager::validate(cfg));
+    cfg.capture.spool_low_watermark_pct = 10;
+    cfg.capture.archive_low_watermark_pct = 100;
+    EXPECT_FALSE(ConfigManager::validate(cfg));
+    cfg.capture.archive_low_watermark_pct = 10;
     cfg.capture.archive_max_age_days = 0;
     EXPECT_FALSE(ConfigManager::validate(cfg));
 }
@@ -195,6 +205,8 @@ TEST(ConfigManagerTests, DefaultValues)
     EXPECT_EQ(cfg.capture.max_files, 10u);
     EXPECT_EQ(cfg.capture.spool_dir, "/var/spool/qdgz300/receiver");
     EXPECT_EQ(cfg.capture.archive_dir, "/data/qdgz300/receiver");
+    EXPECT_EQ(cfg.capture.spool_low_watermark_pct, 10u);
+    EXPECT_EQ(cfg.capture.archive_low_watermark_pct, 10u);
     EXPECT_EQ(cfg.capture.archive_max_files, 256u);
     EXPECT_EQ(cfg.capture.archive_max_age_days, 7u);
     EXPECT_EQ(cfg.control_reliability.rto_ms, 2500u);
