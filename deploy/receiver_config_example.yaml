@@ -39,7 +39,7 @@ consumer:
 
 capture:
   enabled: false
-  spool_dir: "/opt/qdgz300_backend/spool/receiver"
+  spool_dir: "/opt/qdgz300_backend/data/receiver_spool"
   archive_dir: "/data/qdgz300/receiver"
   archive_max_files: 256
   archive_max_age_days: 7
