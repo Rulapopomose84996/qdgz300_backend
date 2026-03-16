@@ -32,6 +32,19 @@ bash scripts/build/build_wsl_cross.sh
 bash scripts/build/build_production.sh
 ```
 
+服务器默认共享缓存目录：
+
+- 离线压缩包：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/archives`
+- 原生依赖缓存：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/build/native-aarch64`
+- 原生共享前缀：`/home/devuser/WorkSpace/ThirdPartyCache/qdgz300_backend/build/native-aarch64/prefix`
+
+如需单独准备服务器共享依赖缓存：
+
+```bash
+cd /home/devuser/WorkSpace/qdgz300_backend
+bash scripts/prepare_native_deps.sh
+```
+
 WSL / Linux 交叉构建：
 
 ```bash
