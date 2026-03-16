@@ -32,6 +32,21 @@ cd /home/devuser/WorkSpace/qdgz300_backend
 bash scripts/test/test_integration.sh build_production
 ```
 
+原始数据落盘长稳验证：
+
+```bash
+cd /home/devuser/WorkSpace/qdgz300_backend
+bash scripts/test/test_spool_soak.sh --phase-seconds 10 --pps 30 --archive-max-files 3
+```
+
+该脚本使用隔离端口和隔离目录验证：
+
+- 连续落盘
+- mover 持续搬运
+- archive 清理触发
+- receiver 重启后恢复
+- backlog / queue_dropped / write_errors / archive_failures 观测
+
 ## 2. 共享第三方缓存约定
 
 服务器原生构建默认使用以下共享目录：
