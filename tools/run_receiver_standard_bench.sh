@@ -23,7 +23,7 @@ SENS_PACKET_SIZES=(1500 1024 512 256 128)
 SENS_TARGET_MBPS=5000
 
 RX_BIN="${BUILD_DIR}/tools/benchmarks/bench_m01_rx_limit"
-TX_BIN="${BUILD_DIR}/fpga_emulator"
+TX_BIN="${BUILD_DIR}/tools/fpga_emulator"
 
 usage() {
     cat <<EOF
@@ -95,7 +95,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 RX_BIN="${BUILD_DIR}/tools/benchmarks/bench_m01_rx_limit"
-TX_BIN="${BUILD_DIR}/fpga_emulator"
+TX_BIN="${BUILD_DIR}/tools/fpga_emulator"
 
 mkdir -p "${RESULTS_DIR}"
 
