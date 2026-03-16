@@ -5,6 +5,8 @@ set -euo pipefail
 CONFIG_FILE="${QDGZ300_RECEIVER_CONFIG:-/opt/qdgz300_backend/config/receiver.yaml}"
 DEFAULT_SPOOL_DIR="${QDGZ300_DEFAULT_SPOOL_DIR:-/opt/qdgz300_backend/data/receiver_spool}"
 DEFAULT_ARCHIVE_DIR="${QDGZ300_DEFAULT_ARCHIVE_DIR:-/data/qdgz300/receiver/archive}"
+DEFAULT_ARCHIVE_MAX_FILES="${QDGZ300_DEFAULT_ARCHIVE_MAX_FILES:-256}"
+DEFAULT_ARCHIVE_MAX_AGE_DAYS="${QDGZ300_DEFAULT_ARCHIVE_MAX_AGE_DAYS:-7}"
 POLL_INTERVAL_SEC="${QDGZ300_SPOOL_POLL_INTERVAL_SEC:-5}"
 LOG_PREFIX="[qdgz300-spool-mover]"
 
@@ -71,9 +73,55 @@ move_one_file() {
   log "archived ${source_file} -> ${final_target}"
 }
 
+cleanup_by_age() {
+  local archive_dir="$1"
+  local max_age_days="$2"
+
+  [[ "${max_age_days}" =~ ^[0-9]+$ ]] || return 0
+  (( max_age_days > 0 )) || return 0
+
+  while IFS= read -r expired_file; do
+    [[ -n "${expired_file}" ]] || continue
+    rm -f "${expired_file}"
+    log "retention removed by age: ${expired_file}"
+  done < <(find "${archive_dir}" -maxdepth 1 -type f -name '*.pcap' -mtime "+${max_age_days}" | sort)
+}
+
+cleanup_by_count() {
+  local archive_dir="$1"
+  local max_files="$2"
+
+  [[ "${max_files}" =~ ^[0-9]+$ ]] || return 0
+  (( max_files > 0 )) || return 0
+
+  mapfile -t archive_files < <(find "${archive_dir}" -maxdepth 1 -type f -name '*.pcap' -printf '%T@ %p\n' | sort -n | awk '{ $1=""; sub(/^ /, ""); print }')
+  local total_files="${#archive_files[@]}"
+  if (( total_files <= max_files )); then
+    return 0
+  fi
+
+  local remove_count=$((total_files - max_files))
+  local index
+  for ((index = 0; index < remove_count; ++index)); do
+    rm -f "${archive_files[index]}"
+    log "retention removed by count: ${archive_files[index]}"
+  done
+}
+
+apply_archive_retention() {
+  local archive_dir="$1"
+  local max_files="$2"
+  local max_age_days="$3"
+
+  cleanup_by_age "${archive_dir}" "${max_age_days}"
+  cleanup_by_count "${archive_dir}" "${max_files}"
+}
+
 main_loop() {
   local spool_dir="$1"
   local archive_dir="$2"
+  local archive_max_files="$3"
+  local archive_max_age_days="$4"
 
   install -d -m 0755 "${spool_dir}" "${archive_dir}"
 
@@ -86,22 +134,28 @@ main_loop() {
       move_one_file "${source_file}" "${archive_dir}"
     done
 
+    apply_archive_retention "${archive_dir}" "${archive_max_files}" "${archive_max_age_days}"
+
     sleep "${POLL_INTERVAL_SEC}"
   done
 }
 
 main() {
-  local spool_dir archive_dir
+  local spool_dir archive_dir archive_max_files archive_max_age_days
   spool_dir="$(trim "$(read_config_value "spool_dir")")"
   archive_dir="$(trim "$(read_config_value "archive_dir")")"
+  archive_max_files="$(trim "$(read_config_value "archive_max_files")")"
+  archive_max_age_days="$(trim "$(read_config_value "archive_max_age_days")")"
 
   [[ -n "${spool_dir}" ]] || spool_dir="${DEFAULT_SPOOL_DIR}"
   [[ -n "${archive_dir}" ]] || archive_dir="${DEFAULT_ARCHIVE_DIR}"
+  [[ -n "${archive_max_files}" ]] || archive_max_files="${DEFAULT_ARCHIVE_MAX_FILES}"
+  [[ -n "${archive_max_age_days}" ]] || archive_max_age_days="${DEFAULT_ARCHIVE_MAX_AGE_DAYS}"
 
-  log "start with config=${CONFIG_FILE} spool_dir=${spool_dir} archive_dir=${archive_dir} interval=${POLL_INTERVAL_SEC}s"
+  log "start with config=${CONFIG_FILE} spool_dir=${spool_dir} archive_dir=${archive_dir} archive_max_files=${archive_max_files} archive_max_age_days=${archive_max_age_days} interval=${POLL_INTERVAL_SEC}s"
 
   cd /
-  main_loop "${spool_dir}" "${archive_dir}"
+  main_loop "${spool_dir}" "${archive_dir}" "${archive_max_files}" "${archive_max_age_days}"
 }
 
 main "$@"

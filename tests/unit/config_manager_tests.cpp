@@ -48,6 +48,8 @@ TEST(ConfigManagerTests, LoadValidConfig)
     ofs << "  enabled: true\n";
     ofs << "  spool_dir: /tmp/receiver-spool\n";
     ofs << "  archive_dir: /data/receiver-archive\n";
+    ofs << "  archive_max_files: 12\n";
+    ofs << "  archive_max_age_days: 14\n";
     ofs << "  max_file_size_mb: 128\n";
     ofs << "  max_files: 5\n";
     ofs << "  filter_packet_types: [\"0x03\", \"0x04\"]\n";
@@ -91,6 +93,8 @@ TEST(ConfigManagerTests, LoadValidConfig)
     EXPECT_TRUE(cfg.capture.enabled);
     EXPECT_EQ(cfg.capture.spool_dir, "/tmp/receiver-spool");
     EXPECT_EQ(cfg.capture.archive_dir, "/data/receiver-archive");
+    EXPECT_EQ(cfg.capture.archive_max_files, 12u);
+    EXPECT_EQ(cfg.capture.archive_max_age_days, 14u);
     EXPECT_EQ(cfg.capture.max_file_size_mb, 128u);
     EXPECT_EQ(cfg.capture.max_files, 5u);
     ASSERT_EQ(cfg.capture.filter_packet_types.size(), 2u);
@@ -149,6 +153,12 @@ TEST(ConfigManagerTests, ValidateGoodConfig)
     cfg.delivery.reconnect_interval_ms = 100;
     cfg.capture.max_files = 10;
     EXPECT_TRUE(ConfigManager::validate(cfg));
+
+    cfg.capture.archive_max_files = 0;
+    EXPECT_FALSE(ConfigManager::validate(cfg));
+    cfg.capture.archive_max_files = 256;
+    cfg.capture.archive_max_age_days = 0;
+    EXPECT_FALSE(ConfigManager::validate(cfg));
 }
 
 TEST(ConfigManagerTests, ValidateBadConfig)
@@ -185,6 +195,8 @@ TEST(ConfigManagerTests, DefaultValues)
     EXPECT_EQ(cfg.capture.max_files, 10u);
     EXPECT_EQ(cfg.capture.spool_dir, "/var/spool/qdgz300/receiver");
     EXPECT_EQ(cfg.capture.archive_dir, "/data/qdgz300/receiver");
+    EXPECT_EQ(cfg.capture.archive_max_files, 256u);
+    EXPECT_EQ(cfg.capture.archive_max_age_days, 7u);
     EXPECT_EQ(cfg.control_reliability.rto_ms, 2500u);
     EXPECT_EQ(cfg.control_reliability.max_retry, 3u);
     EXPECT_EQ(cfg.control_reliability.dup_cmd_cache_size, 1000u);

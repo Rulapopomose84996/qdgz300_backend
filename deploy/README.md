@@ -120,6 +120,7 @@ PCAP 旁路落盘目录：
 - NVMe spool：`/opt/qdgz300_backend/data/receiver_spool`
 - HDD archive：`/data/qdgz300/receiver/archive`
 - 后台搬移：`qdgz300-spool-mover.service`
+- 归档保留：由 `capture.archive_max_files` 和 `capture.archive_max_age_days` 控制
 
 ## 5. 升级与回滚
 
