@@ -53,10 +53,20 @@ performance:
   qos_enabled: true                # 启用QoS优先级处理（心跳优先）
   heartbeat_max_queue_depth: 1000  # 心跳队列最大深度
 
-# 已移除的配置项（联调阶段不需要）:
-# - timestamp: 移除TimestampHandler
-# - flow_control: 移除FlowController
-# - control_reliability: 仅处理Data+Heartbeat，无Control Plane
-# - monitoring: 移除Prometheus/Grafana依赖
-# - delivery: 输出替换为SPSC队列+消费者桩
-# - capture: 联调阶段降优先级，可选使用消费者桩落盘
+# 原始 PCAP 旁路缓冲（只写 NVMe spool，不直接写 /data 归档盘）
+capture:
+  enabled: false
+  spool_dir: "/var/spool/qdgz300/receiver"
+  archive_dir: "/data/qdgz300/receiver"
+  spool_low_watermark_pct: 10
+  archive_low_watermark_pct: 10
+  archive_max_files: 256
+  archive_max_age_days: 7
+  max_file_size_mb: 1024
+  max_files: 8
+  filter_packet_types: ["0x03", "0x04"]
+  filter_source_ids: []
+
+# 说明：
+# - capture.spool_dir 必须位于本地高速盘/NVMe，供后续异步搬移进程接管
+# - capture.archive_dir 仅作为归档对接约定，本应用当前不会直接写入

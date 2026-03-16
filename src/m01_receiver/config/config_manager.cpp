@@ -181,7 +181,16 @@ namespace receiver
 
                 const YAML::Node capture = root["capture"];
                 assign_if_present(capture, "enabled", cfg.capture.enabled);
-                assign_if_present(capture, "output_dir", cfg.capture.output_dir);
+                assign_if_present(capture, "spool_dir", cfg.capture.spool_dir);
+                if (cfg.capture.spool_dir == ReceiverConfig::Capture{}.spool_dir)
+                {
+                    assign_if_present(capture, "output_dir", cfg.capture.spool_dir);
+                }
+                assign_if_present(capture, "archive_dir", cfg.capture.archive_dir);
+                assign_if_present(capture, "spool_low_watermark_pct", cfg.capture.spool_low_watermark_pct);
+                assign_if_present(capture, "archive_low_watermark_pct", cfg.capture.archive_low_watermark_pct);
+                assign_if_present(capture, "archive_max_files", cfg.capture.archive_max_files);
+                assign_if_present(capture, "archive_max_age_days", cfg.capture.archive_max_age_days);
                 assign_if_present(capture, "max_file_size_mb", cfg.capture.max_file_size_mb);
                 assign_if_present(capture, "max_files", cfg.capture.max_files);
                 assign_hex_or_decimal_u8_vector(capture, "filter_packet_types", cfg.capture.filter_packet_types);
@@ -374,7 +383,23 @@ namespace receiver
             {
                 return false;
             }
-            if (config.capture.enabled && config.capture.output_dir.empty())
+            if (config.capture.enabled && config.capture.spool_dir.empty())
+            {
+                return false;
+            }
+            if (config.capture.archive_max_files == 0 || config.capture.archive_max_files > 100000)
+            {
+                return false;
+            }
+            if (config.capture.spool_low_watermark_pct == 0 || config.capture.spool_low_watermark_pct > 99)
+            {
+                return false;
+            }
+            if (config.capture.archive_low_watermark_pct == 0 || config.capture.archive_low_watermark_pct > 99)
+            {
+                return false;
+            }
+            if (config.capture.archive_max_age_days == 0 || config.capture.archive_max_age_days > 3650)
             {
                 return false;
             }

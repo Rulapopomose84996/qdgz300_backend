@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <cerrno>
+#include <cstdio>
+#include <fstream>
 #include <string>
 #include <thread>
 
@@ -16,6 +18,12 @@
 
 namespace
 {
+    std::string make_temp_metrics_path()
+    {
+        const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
+        return "/tmp/receiver_external_metrics_" + std::to_string(now) + ".prom";
+    }
+
     std::string http_get_metrics(uint16_t port)
     {
         int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -107,6 +115,16 @@ namespace
 
 TEST(MetricsTests, ExposesRequiredPrometheusMetrics)
 {
+    const std::string external_metrics = make_temp_metrics_path();
+    {
+        std::ofstream ofs(external_metrics, std::ios::trunc);
+        ASSERT_TRUE(ofs.is_open());
+        ofs << "# HELP qdgz300_spool_mover_archived_total Total sealed pcap files archived from spool to archive.\n";
+        ofs << "# TYPE qdgz300_spool_mover_archived_total counter\n";
+        ofs << "qdgz300_spool_mover_archived_total 3\n";
+    }
+    ASSERT_EQ(setenv("QDGZ300_EXTERNAL_METRICS_FILE", external_metrics.c_str(), 1), 0);
+
     auto &metrics = receiver::monitoring::MetricsCollector::instance();
     const uint16_t port = 18081;
     metrics.initialize(port, "127.0.0.1");
@@ -150,6 +168,8 @@ TEST(MetricsTests, ExposesRequiredPrometheusMetrics)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     metrics.stop();
+    unsetenv("QDGZ300_EXTERNAL_METRICS_FILE");
+    (void)std::remove(external_metrics.c_str());
 
     ASSERT_FALSE(payload.empty());
     EXPECT_NE(payload.find("receiver_packets_received_total{packet_type=\"data\"}"), std::string::npos);
@@ -174,4 +194,5 @@ TEST(MetricsTests, ExposesRequiredPrometheusMetrics)
     EXPECT_NE(payload.find("heartbeat_queue_depth"), std::string::npos);
     EXPECT_NE(payload.find("packet_pool_allocation_latency_ns_bucket"), std::string::npos);
     EXPECT_NE(payload.find("receiver_heartbeat_state"), std::string::npos);
+    EXPECT_NE(payload.find("qdgz300_spool_mover_archived_total 3"), std::string::npos);
 }

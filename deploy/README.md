@@ -32,6 +32,20 @@ cd /home/devuser/WorkSpace/qdgz300_backend
 bash scripts/test/test_integration.sh build_production
 ```
 
+原始数据落盘长稳验证：
+
+```bash
+cd /home/devuser/WorkSpace/qdgz300_backend
+bash scripts/test/test_spool_soak.sh --phase-seconds 10 --pps 30 --archive-max-files 3
+```
+
+该脚本使用隔离端口和隔离目录验证：
+
+- 连续落盘
+- mover 持续搬运
+- archive 清理触发
+- receiver 重启后恢复
+- backlog / queue_dropped / write_errors / archive_failures 观测
 ## 2. 共享第三方缓存约定
 
 服务器原生构建默认使用以下共享目录：
@@ -61,7 +75,7 @@ bash scripts/test/test_integration.sh build_production
 
 ```bash
 cd /home/devuser/WorkSpace/qdgz300_backend
-git pull --ff-only origin refactor/kylin-v10-arm64-cuda-clang18
+git pull --ff-only origin main
 ```
 
 ### 3.2 构建
@@ -115,8 +129,15 @@ sudo bash scripts/ops/tail_logs.sh
     └── <timestamp>/
 ```
 
-## 5. 升级与回滚
+PCAP 旁路落盘目录：
 
+- NVMe spool：`/opt/qdgz300_backend/data/receiver_spool`
+- HDD archive：`/data/qdgz300/receiver/archive`
+- 后台搬移：`qdgz300-spool-mover.service`
+- 归档保留：由 `capture.archive_max_files` 和 `capture.archive_max_age_days` 控制
+- mover 指标文件：`/opt/qdgz300_backend/data/metrics/qdgz300_spool_mover.prom`
+
+## 5. 升级与回滚
 升级：
 
 ```bash
@@ -167,5 +188,6 @@ sudo cp -a /opt/qdgz300_backend/releases/<timestamp>/config/. /opt/qdgz300_backe
 cd /home/devuser/WorkSpace/qdgz300_backend
 sudo bash scripts/ops/check_services.sh
 sudo systemctl status qdgz300-receiver.service --no-pager
+sudo systemctl status qdgz300-spool-mover.service --no-pager
 sudo journalctl -u qdgz300-receiver.service -n 50 --no-pager
 ```

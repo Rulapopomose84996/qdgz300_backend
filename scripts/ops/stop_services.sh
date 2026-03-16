@@ -11,4 +11,7 @@ EOF
 
 [[ "${1:-}" == "--help" ]] && { usage; exit 0; }
 
-systemctl stop qdgz300-receiver.service
+SERVICE_NAME="${SERVICE_NAME:-qdgz300-receiver}"
+MOVER_SERVICE_NAME="${MOVER_SERVICE_NAME:-qdgz300-spool-mover}"
+
+systemctl stop "${MOVER_SERVICE_NAME}.service" "${SERVICE_NAME}.service"
