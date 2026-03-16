@@ -5,7 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 BUILD_DIR="${ROOT_DIR}/build_wsl_native_perf"
-RESULTS_DIR="${BUILD_DIR}/results/standard_bench_$(date +%Y%m%d_%H%M%S)"
+RESULTS_DIR=""
+RESULTS_DIR_EXPLICIT=0
 BIND_IP="127.0.0.1"
 TARGET_IP="127.0.0.1"
 PORT=9999
@@ -51,6 +52,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --results-dir)
             RESULTS_DIR="$2"
+            RESULTS_DIR_EXPLICIT=1
             shift 2
             ;;
         --port)
@@ -96,6 +98,10 @@ done
 
 RX_BIN="${BUILD_DIR}/tools/benchmarks/bench_m01_rx_limit"
 TX_BIN="${BUILD_DIR}/tools/fpga_emulator"
+
+if [[ "${RESULTS_DIR_EXPLICIT}" -eq 0 ]]; then
+    RESULTS_DIR="${BUILD_DIR}/results/standard_bench_$(date +%Y%m%d_%H%M%S)"
+fi
 
 mkdir -p "${RESULTS_DIR}"
 
@@ -196,21 +202,21 @@ if loss_rate < 0:
 
 cpu_avg = None
 if cpu_path.exists():
-    pid = str(int(rx.get("pid", 0) or 0))
+    samples = []
     for line in cpu_path.read_text(encoding="utf-8", errors="ignore").splitlines():
         s = line.strip()
-        if not s.startswith("Average:"):
+        if not s or "UID" in s or s.startswith("Linux "):
             continue
         parts = s.split()
-        if len(parts) < 8:
+        if len(parts) < 4:
             continue
-        for i in range(len(parts) - 1):
-            if parts[i].isdigit():
-                try:
-                    cpu_avg = float(parts[i + 4])
-                except Exception:
-                    pass
-                break
+        try:
+            cpu_value = float(parts[-3])
+        except Exception:
+            continue
+        samples.append(cpu_value)
+    if samples:
+        cpu_avg = sum(samples) / len(samples)
 
 packet_size_total = int(${packet_size_total})
 throughput_mbps = rx_valid_pps * packet_size_total * 8.0 / 1e6
