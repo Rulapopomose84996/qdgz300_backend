@@ -11,4 +11,7 @@ EOF
 
 [[ "${1:-}" == "--help" ]] && { usage; exit 0; }
 
-systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-receiver.service qdgz300-spool-mover.service
+SERVICE_NAME="${SERVICE_NAME:-qdgz300-receiver}"
+MOVER_SERVICE_NAME="${MOVER_SERVICE_NAME:-qdgz300-spool-mover}"
+
+systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service "${SERVICE_NAME}.service" "${MOVER_SERVICE_NAME}.service"

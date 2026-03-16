@@ -11,4 +11,6 @@ EOF
 
 [[ "${1:-}" == "--help" ]] && { usage; exit 0; }
 
-journalctl -u qdgz300-receiver.service -f
+SERVICE_NAME="${SERVICE_NAME:-qdgz300-receiver}"
+
+journalctl -u "${SERVICE_NAME}.service" -f

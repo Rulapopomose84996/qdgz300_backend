@@ -1,13 +1,15 @@
 [Unit]
 Description=QDGZ300 PCAP spool archive mover
-After=network-online.target qdgz300-receiver.service
-Wants=network-online.target qdgz300-receiver.service
+After=network-online.target @RECEIVER_SERVICE@
+Wants=network-online.target @RECEIVER_SERVICE@
 
 [Service]
 Type=simple
-User=qdgz300
-Group=qdgz300
-WorkingDirectory=/opt/qdgz300_backend
+User=@SERVICE_USER@
+Group=@SERVICE_GROUP@
+WorkingDirectory=@INSTALL_ROOT@
+Environment=QDGZ300_RECEIVER_CONFIG=@INSTALL_ROOT@/config/receiver.yaml
+Environment=QDGZ300_DEFAULT_METRICS_DIR=@INSTALL_ROOT@/data/metrics
 ExecStart=/usr/local/bin/qdgz300-spool-mover.sh
 Restart=always
 RestartSec=5

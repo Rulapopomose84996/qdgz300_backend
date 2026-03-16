@@ -22,6 +22,7 @@ BUILD_DIR_INPUT="${1:-${ROOT_DIR}/build_production}"
 BUILD_DIR="$(cd "${BUILD_DIR_INPUT}" 2>/dev/null && pwd || true)"
 INSTALL_ROOT="${INSTALL_ROOT:-/opt/qdgz300_backend}"
 SERVICE_NAME="${SERVICE_NAME:-qdgz300-receiver}"
+MOVER_SERVICE_NAME="${MOVER_SERVICE_NAME:-qdgz300-spool-mover}"
 SERVICE_USER="${SERVICE_USER:-qdgz300}"
 SERVICE_GROUP="${SERVICE_GROUP:-qdgz300}"
 SYSTEMD_DIR="/etc/systemd/system"
@@ -43,6 +44,41 @@ warn() {
 die() {
   printf '[install][error] %s\n' "$*" >&2
   exit 1
+}
+
+resolve_build_artifact() {
+  local build_dir="$1"
+  local binary_name="$2"
+  local direct="${build_dir}/${binary_name}"
+  local m01_path="${build_dir}/src/m01_receiver/${binary_name}"
+  local tools_path="${build_dir}/tools/${binary_name}"
+
+  if [[ -f "${direct}" ]]; then
+    printf '%s\n' "${direct}"
+    return 0
+  fi
+  if [[ -f "${m01_path}" ]]; then
+    printf '%s\n' "${m01_path}"
+    return 0
+  fi
+  if [[ -f "${tools_path}" ]]; then
+    printf '%s\n' "${tools_path}"
+    return 0
+  fi
+  return 1
+}
+
+render_systemd_unit() {
+  local template_path="$1"
+  local output_path="$2"
+  local receiver_service_unit="${SERVICE_NAME}.service"
+
+  sed \
+    -e "s|@INSTALL_ROOT@|${INSTALL_ROOT}|g" \
+    -e "s|@SERVICE_USER@|${SERVICE_USER}|g" \
+    -e "s|@SERVICE_GROUP@|${SERVICE_GROUP}|g" \
+    -e "s|@RECEIVER_SERVICE@|${receiver_service_unit}|g" \
+    "${template_path}" > "${output_path}"
 }
 
 require_root() {
@@ -95,7 +131,10 @@ backup_existing_install() {
 main() {
   require_root
   [[ -n "${BUILD_DIR}" && -d "${BUILD_DIR}" ]] || die "Build directory not found: ${BUILD_DIR_INPUT}"
-  [[ -f "${BUILD_DIR}/receiver_app" ]] || die "Expected binary not found: ${BUILD_DIR}/receiver_app"
+  local receiver_bin
+  receiver_bin="$(resolve_build_artifact "${BUILD_DIR}" receiver_app)" || die "Expected binary not found under: ${BUILD_DIR}"
+  local emulator_bin=""
+  emulator_bin="$(resolve_build_artifact "${BUILD_DIR}" fpga_emulator || true)"
 
   ensure_service_account
 
@@ -104,9 +143,9 @@ main() {
   backup_existing_install
 
   log "Installing application binaries"
-  install -m 0755 "${BUILD_DIR}/receiver_app" "${BIN_DIR}/receiver_app"
-  if [[ -f "${BUILD_DIR}/fpga_emulator" ]]; then
-    install -m 0755 "${BUILD_DIR}/fpga_emulator" "${BIN_DIR}/fpga_emulator"
+  install -m 0755 "${receiver_bin}" "${BIN_DIR}/receiver_app"
+  if [[ -n "${emulator_bin}" && -f "${emulator_bin}" ]]; then
+    install -m 0755 "${emulator_bin}" "${BIN_DIR}/fpga_emulator"
   fi
 
 log "Installing helper scripts"
@@ -121,8 +160,8 @@ install -m 0755 "${ROOT_DIR}/tools/pcap_spool_mover.sh" "/usr/local/bin/qdgz300-
   install_service_config
 
   log "Installing systemd and sysctl assets"
-  install -m 0644 "${ROOT_DIR}/deploy/systemd/qdgz300-receiver.service" "${SYSTEMD_DIR}/${SERVICE_NAME}.service"
-  install -m 0644 "${ROOT_DIR}/deploy/systemd/qdgz300-spool-mover.service" "${SYSTEMD_DIR}/qdgz300-spool-mover.service"
+  render_systemd_unit "${ROOT_DIR}/deploy/systemd/qdgz300-receiver.service" "${SYSTEMD_DIR}/${SERVICE_NAME}.service"
+  render_systemd_unit "${ROOT_DIR}/deploy/systemd/qdgz300-spool-mover.service" "${SYSTEMD_DIR}/${MOVER_SERVICE_NAME}.service"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/qdgz300-sysctl.service" "${SYSTEMD_DIR}/qdgz300-sysctl.service"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/nic-optimization.service" "${SYSTEMD_DIR}/nic-optimization.service"
   install -m 0644 "${ROOT_DIR}/deploy/systemd/cpu-performance.service" "${SYSTEMD_DIR}/cpu-performance.service"
@@ -143,18 +182,19 @@ Install completed.
 Application root:
   ${INSTALL_ROOT}
 
-Service file:
+  Service file:
   ${SYSTEMD_DIR}/${SERVICE_NAME}.service
+  ${SYSTEMD_DIR}/${MOVER_SERVICE_NAME}.service
 
 Next steps:
   1. Edit runtime config: ${CONFIG_DIR}/receiver.yaml
   2. Enable sysctl/tuning services:
-     sudo systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service qdgz300-spool-mover.service
+     sudo systemctl enable qdgz300-sysctl.service nic-optimization.service cpu-performance.service ${MOVER_SERVICE_NAME}.service
   3. Enable receiver service:
      sudo systemctl enable ${SERVICE_NAME}.service
   4. Start services:
      sudo systemctl start qdgz300-sysctl.service nic-optimization.service cpu-performance.service
-     sudo systemctl start ${SERVICE_NAME}.service qdgz300-spool-mover.service
+     sudo systemctl start ${SERVICE_NAME}.service ${MOVER_SERVICE_NAME}.service
   5. Check status:
      sudo systemctl status ${SERVICE_NAME}.service
   6. Roll back manually if needed:
