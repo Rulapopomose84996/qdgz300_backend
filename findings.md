@@ -1,0 +1,80 @@
+# Findings
+
+## 2026-03-26
+- 项目存在非归档的接收模块设计文档：[docs/设计/实现设计/M01接收模块设计与现状.md](D:\WorkSpace\Company\Tower\qdgz300_backend\docs\设计\实现设计\M01接收模块设计与现状.md)
+- 项目存在非归档的工作入口文档：[docs/进展/00_工作入口.md](D:\WorkSpace\Company\Tower\qdgz300_backend\docs\进展\00_工作入口.md)
+- 项目存在与架构边界、数据流和状态契约相关的系统文档：
+  - [docs/设计/系统架构/系统总览与架构边界.md](D:\WorkSpace\Company\Tower\qdgz300_backend\docs\设计\系统架构\系统总览与架构边界.md)
+  - [docs/设计/系统架构/数据流、控制流与状态契约.md](D:\WorkSpace\Company\Tower\qdgz300_backend\docs\设计\系统架构\数据流、控制流与状态契约.md)
+- 检索结果显示 `docs/规划/接收端优化方案.md` 可能包含接收链路优化信息，后续需要与当前实现核对。
+- 活跃文档中的接收模块正式边界：
+  - 范围：`src/m01_receiver/`、`include/qdgz300/m01_receiver/`、相关配置
+  - 职责：UDP 收包、协议头解析校验、`RxStage` 解耦、`DATA/HEARTBEAT` 分发、分片重组、重排、有序输出投递
+  - 非职责：M02 GPU 信号处理、M03 航迹处理、M04 网关编码、Orchestrator 状态裁决
+- 活跃文档中的主路径定义：
+  - `UdpReceiver / ArrayFaceReceiver -> RxStage::on_packet() -> SPSCQueue<RxEnvelope> -> processing thread -> Dispatcher -> Reassembler -> Reorderer -> DeliveryInterface`
+- 系统主数据流定义：
+  - `M01 Receiver -> M02 SignalProc -> M03 DataProc -> M04 Gateway -> HMI / 上级系统`
+  - M01 在系统层面承担“接收、校验、重组、重排”的职责，是整个后续算法链路的数据入口。
+- 源码目录结构与活跃文档一致：
+  - `network/`：`udp_receiver`、`array_face_receiver`、`packet_pool`
+  - `protocol/`：协议解析、校验、类型定义、CRC
+  - `pipeline/`：`rx_stage`、`dispatcher`、`reassembler`、`reorderer`
+  - `delivery/`：`delivery_interface`、`rawblock_adapter`、`stub_consumer`
+  - `config/`、`monitoring/`：配置与可观测性
+- `RxStage` 的实现约束在头文件中写得非常明确：
+  - 运行在线程侧热路径，只做 `parse -> validate -> fill envelope -> SPSC push`
+  - 不允许引入重对象、复杂容器查找、频繁动态分配或下游业务判断
+  - 每个阵面拥有独立 `RxStage` 与独立 SPSC 队列，无共享状态
+- `RxEnvelope` 是热路径输出的唯一轻量单元，字段由三层组成：
+  - 已解析通用头 `CommonHeader`
+  - 接收元数据：阵面编号、接收时间戳、报文长度
+  - 零拷贝网络缓冲 `PacketBuffer`
+- `Dispatcher` 的职责并不做复杂流水线调度，而是协议类型路由：
+  - 数据包交给数据处理回调
+  - 心跳包走独立回调/优先队列
+  - 其他类型静默丢弃并计数
+- `Reassembler` 不是简单 memcpy 聚合器，而是“零拷贝持有分片 + 完成时顺序拼帧”的设计：
+  - 每个上下文按 `ReassemblyKey` 聚合
+  - 支持超时、不完整帧输出、冻结超时键、重复片/迟到片统计
+  - 生产路径优先使用 `process_packet_zero_copy`
+- `Reorderer` 维护序列窗口并通过回调输出 `OrderedPacket`：
+  - 支持超时推进
+  - 可选零填补洞
+  - 可输出不完整帧标记
+- 对下游交付的抽象有两层：
+  - 通用 `DeliveryInterface` 面向有序包交付
+  - `RawBlockAdapter` 负责把 `OrderedPacket` 进一步转换成给 M02 使用的 `RawBlock` 并压入 SPSC 队列
+- `app_init.cpp` 明确了系统组装顺序和真实依赖方向：
+  - 初始化顺序是“下游到上游”：Config/Logger/Metrics → Delivery → Reorderer → Reassembler → Dispatcher → RxStage → UdpReceiver
+  - 每个阵面各有一条独立 `FacePipeline`
+  - 所有阵面共享 `DeliveryInterface`，但 `RawBlockAdapter`、`RxStage`、`Reassembler`、`Reorderer` 都是按阵面独立
+- 阵面拓扑判定规则来自配置：
+  - 当 `bind_ips/source_id_map/cpu_affinity_map` 都是 3 项时，进入三阵面模式
+  - 否则退化为单阵面模式
+- `Reorderer` 的输出在当前实现中会走双路径：
+  - 路径 A：进入共享 `DeliveryInterface`，这条路径由 `delivery_mutex` 保护
+  - 路径 B：如果启用了 consumer，则通过每阵面独立 `RawBlockAdapter` 转成 `RawBlock` 并压入独立 SPSC 队列
+- `Dispatcher` 实际有两条 DATA 路径：
+  - 兼容路径：`process_packet(packet)`
+  - 生产路径：`process_packet_zero_copy(packet, PacketBuffer&&)`，把 `PacketBuffer` 所有权直接传给 `Reassembler`
+- `app_run.cpp` 明确了运行态线程模型：
+  - 主线程负责 metrics HTTP、信号处理、SIGHUP 热加载、各阵面 reassembly/reorder timeout 扫描、聚合指标
+  - 每个阵面单独启动一个 processing thread，持续从 `RxStage` 的 SPSC 队列 `try_pop()`
+  - 队列空时休眠 `10us`，说明处理线程采用轻量轮询而非阻塞等待
+- processing thread 对 `RxEnvelope` 的消费方式：
+  - 从 envelope 还原 `ParsedPacket`
+  - 指标记账
+  - 调用 `dispatcher->dispatch(pkt, std::move(env.packet_data))`
+  - 即，`PacketBuffer` 所有权沿着 dispatcher → reassembler 零拷贝继续下传
+- 运行时热加载能力当前只覆盖：
+  - 日志级别
+  - `Reassembler` 超时
+  - `Reorderer` 超时
+  - PCAP 抓包开关与参数
+- 优雅关闭顺序体现了模块依赖：
+  - 先停 `StubConsumer`
+  - 再停 `UdpReceiver`
+  - 再停 processing thread
+  - 然后停抓包、flush `Reassembler`、flush `Reorderer`、flush `DeliveryInterface`、最后停 metrics
+  - 这说明“网络入口停新流量，处理线程排空存量，最后强制冲刷下游”是当前系统的关闭语义
