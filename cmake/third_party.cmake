@@ -203,7 +203,7 @@ endif()
 
 if(QDGZ300_ENABLE_PROTOBUF)
     find_package(Protobuf REQUIRED)
-    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS "${CMAKE_SOURCE_DIR}/docs/冻结资产/hmi_protocol.proto")
+    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS "${CMAKE_SOURCE_DIR}/proto/hmi_protocol.proto")
 endif()
 
 if(QDGZ300_ENABLE_GPU)
