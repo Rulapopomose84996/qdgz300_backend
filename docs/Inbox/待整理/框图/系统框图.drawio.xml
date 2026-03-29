@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0" version="29.6.6">
+  <diagram id="radar_sys_arch" name="雷达系统协同架构">
+    <mxGraphModel dx="2549" dy="795" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="beidou" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" value="北斗卫星导航系统&lt;br&gt;(GNSS)" vertex="1">
+          <mxCellGeometry x="50" y="820" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="frontend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="前端阵面 (ADC / FPGA / TR)&lt;br&gt;[current / next 缓冲控制]" vertex="1">
+          <mxCellGeometry x="250" y="820" width="520" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hmi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" value="显控软件 (HMI)&lt;br&gt;[任务意图输入 / 运行态展示 / 人工干预]" vertex="1">
+          <mxCellGeometry x="250" y="40" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="infra" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" value="基础设施建设&lt;br&gt;(日志/告警/监控/状态沉淀)" vertex="1">
+          <mxCellGeometry x="840" y="200" width="120" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="task_center" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" value="任务调度中心&lt;br&gt;[运行状态机 / 边界管理 / 定版裁决]" vertex="1">
+          <mxCellGeometry x="580" y="240" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_container" parent="1" style="shape=swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1" value="网关模块" vertex="1">
+          <mxCellGeometry x="150" y="200" width="380" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_up" parent="gw_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="上行网关&lt;br&gt;(发布边界)" vertex="1">
+          <mxCellGeometry x="30" y="50" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gw_down" parent="gw_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="下行网关&lt;br&gt;(控制链路视图)" vertex="1">
+          <mxCellGeometry x="210" y="50" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_container" parent="1" style="shape=swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1" value="数据处理与目标跟踪软件" vertex="1">
+          <mxCellGeometry x="150" y="400" width="620" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_proc" parent="dp_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="数据处理模块&lt;br&gt;(阵面融合 / 航迹生成)" vertex="1">
+          <mxCellGeometry x="250" y="50" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_ctrl" parent="dp_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="控制策略 / 波束安排&lt;br&gt;生成模块" vertex="1">
+          <mxCellGeometry x="430" y="50" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="dp_container" source="dp_proc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#d79b00;strokeWidth=2;" target="dp_ctrl" value="控制建议输入">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sig_container" parent="1" style="shape=swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1" value="信号处理软件" vertex="1">
+          <mxCellGeometry x="150" y="600" width="620" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="sig_rx" parent="sig_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="数据接收模块&lt;br&gt;(重组 / 挂载参数快照)" vertex="1">
+          <mxCellGeometry x="30" y="50" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sig_proc" parent="sig_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="信号处理模块&lt;br&gt;(GPU计算 / 点迹提取)" vertex="1">
+          <mxCellGeometry x="250" y="50" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sig_rec" parent="sig_container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="原始数据录制&lt;br&gt;(旁路 / 异步转存)" vertex="1">
+          <mxCellGeometry x="30" y="120" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="sig_container" source="sig_rx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#666666;dashed=1;" target="sig_rec" value="原始包镜像 (旁路)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="sig_container" source="sig_rx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b78e4;strokeWidth=2;" target="sig_proc" value="完整 CPI 数据单元 + 参数快照">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="beidou" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#333333;strokeWidth=2;" target="frontend" value="1PPS (根时基)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="frontend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b78e4;strokeWidth=2;" target="sig_rx" value="原始数据 UDP 流">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="780" />
+              <mxPoint x="250" y="780" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="sig_proc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b78e4;strokeWidth=2;" target="dp_proc" value="点迹数据 +&lt;br&gt;参数快照透传">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="dp_proc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b78e4;strokeWidth=2;" target="gw_up" value="航迹数据 + 状态摘要">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="470" y="360" />
+              <mxPoint x="250" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="gw_up" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b78e4;strokeWidth=2;" target="hmi" value="发布航迹 / 结果">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="150" />
+              <mxPoint x="320" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="dp_ctrl" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#d79b00;strokeWidth=2;" target="task_center" value="下一周期候选波束安排">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="hmi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;strokeWidth=2;" target="gw_down" value="任务意图 / 模式切换 / 人工干预">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="150" />
+              <mxPoint x="430" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="task_center" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;dashed=1;strokeWidth=2;" target="hmi" value="统一状态视图 / 告警">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="675" y="150" />
+              <mxPoint x="550" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="gw_down" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;strokeWidth=2;" target="task_center" value="标准化控制请求 /&lt;br&gt;软件边界事件透传">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="540" y="270" />
+              <mxPoint x="540" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="task_center" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;strokeWidth=2;" target="gw_down" value="三阵面定版调度执行表 / 管理命令">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="540" y="290" />
+              <mxPoint x="540" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="gw_down" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;strokeWidth=2;" target="frontend" value="调度执行表 / 应急管理命令">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="360" />
+              <mxPoint x="750" y="360" />
+              <mxPoint x="750" y="780" />
+              <mxPoint x="580" y="780" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="frontend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;strokeWidth=2;dashed=1;" target="gw_down" value="ACK / 遥测 / 软件秒边界事件(PPS通知)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="760" />
+              <mxPoint x="790" y="760" />
+              <mxPoint x="790" y="380" />
+              <mxPoint x="450" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="task_center" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#d6b656;dashed=1;" target="infra" value="采集 / 监控 / 日志沉淀">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="dp_ctrl" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#d6b656;dashed=1;" target="infra">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="480" />
+              <mxPoint x="790" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="sig_proc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#d6b656;dashed=1;" target="infra">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="680" />
+              <mxPoint x="790" y="680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-1" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1" value="基础设施建设&#xa;(日志/指标/告警/运行诊断/配置)" vertex="1">
+          <mxGeometry height="540" width="140" x="310" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" value="北斗 GNSS&#xa;(1PPS 根时基)" vertex="1">
+          <mxGeometry height="60" width="120" x="-610" y="1240" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="前端阵面 (ADC / FPGA / TR)&#xa;[接口语义: current / next]" vertex="1">
+          <mxGeometry height="60" width="640" x="-410" y="1240" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" value="显控软件 (HMI)&#xa;[任务意图 / 状态展示 / 人工干预]" vertex="1">
+          <mxGeometry height="60" width="1050" x="-600" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" value="任务调度中心&#xa;[状态机 / 时基管理 / 边界管理 / 定版裁决]" vertex="1">
+          <mxGeometry height="80" width="240" x="-10" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-6" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" value="网关模块" vertex="1">
+          <mxGeometry height="120" width="520" x="-590" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-7" parent="Ou_KfrkuBlXpNLWf11AW-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="上行网关&#xa;(航迹发布/状态反馈)" vertex="1">
+          <mxGeometry height="60" width="200" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-8" parent="Ou_KfrkuBlXpNLWf11AW-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="下行网关&#xa;(调度表/管理命令下发)" vertex="1">
+          <mxGeometry height="60" width="200" x="280" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-9" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" value="数据处理与目标跟踪软件" vertex="1">
+          <mxGeometry height="140" width="820" x="-590" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-10" parent="Ou_KfrkuBlXpNLWf11AW-9" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="数据处理模块&#xa;(目标识别 / 阵面融合 / 航迹生成)" vertex="1">
+          <mxGeometry height="60" width="320" x="40" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-11" parent="Ou_KfrkuBlXpNLWf11AW-9" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="控制策略 / 波束安排生成模块&#xa;(候选安排生成)" vertex="1">
+          <mxGeometry height="60" width="320" x="460" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-12" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" value="信号处理软件" vertex="1">
+          <mxGeometry height="160" width="820" x="-590" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-14" parent="Ou_KfrkuBlXpNLWf11AW-12" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="信号处理模块&#xa;(GPU 算法流水线 / 点迹提取)" vertex="1">
+          <mxGeometry height="60" width="400" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-15" parent="Ou_KfrkuBlXpNLWf11AW-12" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="原始数据录制&amp;nbsp; (Node1 Tap 旁路 / Node0 异步写盘)" vertex="1">
+          <mxGeometry height="30" width="740" x="40" y="115" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-13" parent="Ou_KfrkuBlXpNLWf11AW-12" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="数据接收模块&#xa;(UDP重组 / 参数快照挂载)" vertex="1">
+          <mxGeometry height="60" width="240" x="540" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-18" edge="1" parent="Ou_KfrkuBlXpNLWf11AW-12" source="Ou_KfrkuBlXpNLWf11AW-13" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#2b78e4;rounded=0;" target="Ou_KfrkuBlXpNLWf11AW-14" value="2. CPI 单元 + 快照">
+          <mxGeometry height="50" relative="1" width="50" y="-20" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-16" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-2" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#9673a6;" target="Ou_KfrkuBlXpNLWf11AW-3" value="1PPS (物理硬连线)">
+          <mxGeometry height="50" relative="1" width="50" x="0.25" y="50" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-17" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-3" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#2b78e4;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="Ou_KfrkuBlXpNLWf11AW-13" value="1. 原始数据流 (UDP)">
+          <mxGeometry height="50" relative="1" width="50" x="-0.2857" y="-30" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-19" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-14" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#2b78e4;exitX=0.401;exitY=0.056;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ou_KfrkuBlXpNLWf11AW-10" value="3. 点迹 + 快照透传">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-20" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-10" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#2b78e4;exitX=0.309;exitY=-0.017;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ou_KfrkuBlXpNLWf11AW-7" value="4. 航迹 / 发布对象">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-21" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-7" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#2b78e4;entryX=0.142;entryY=1.024;entryDx=0;entryDy=0;entryPerimeter=0;" target="Ou_KfrkuBlXpNLWf11AW-4" value="5. 态势显示">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="-400" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-22" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-4" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#b85450;exitX=0.371;exitY=1.006;exitDx=0;exitDy=0;exitPerimeter=0;" target="Ou_KfrkuBlXpNLWf11AW-8" value="A. 任务意图 / 命令">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-23" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#b85450;" value="B. 标准化请求">
+          <mxGeometry height="50" relative="1" width="50" x="0.0502" y="12" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="-110" y="679.76" as="sourcePoint" />
+            <mxPoint x="-10" y="679.76" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-25" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-8" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;exitX=0.208;exitY=1.022;exitDx=0;exitDy=0;rounded=1;edgeStyle=orthogonalEdgeStyle;exitPerimeter=0;" value="D. 下发执行表 (Schedule)">
+          <mxGeometry height="50" relative="1" width="50" x="-0.1916" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="-268" y="760" />
+              <mxPoint x="-620" y="760" />
+              <mxPoint x="-620" y="1190" />
+              <mxPoint x="-240" y="1190" />
+              <mxPoint x="-240" y="1240" />
+            </Array>
+            <mxPoint x="-240" y="1240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-26" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-3" style="endArrow=classic;html=1;dashed=1;strokeColor=#b85450;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="Ou_KfrkuBlXpNLWf11AW-5" value="E. ACK / 遥测 / 软件秒边界事件">
+          <mxGeometry height="50" relative="1" width="50" y="70" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="270" y="1270" />
+              <mxPoint x="270" y="690" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-27" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-11" style="endArrow=classic;html=1;strokeColor=#d79b00;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="Ou_KfrkuBlXpNLWf11AW-5" value="F. 控制建议输入">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-28" edge="1" parent="1" source="Ou_KfrkuBlXpNLWf11AW-10" style="endArrow=classic;html=1;strokeColor=#d79b00;" target="Ou_KfrkuBlXpNLWf11AW-11" value="G. 闭环反馈">
+          <mxGeometry height="50" relative="1" width="50" x="-0.2294" y="-12" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ou_KfrkuBlXpNLWf11AW-24" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;rounded=0;" value="C. 定版执行表 / 周期号">
+          <mxGeometry height="50" relative="1" width="50" x="-0.3262" y="14" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="-10" y="700" as="sourcePoint" />
+            <mxPoint x="-110" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
