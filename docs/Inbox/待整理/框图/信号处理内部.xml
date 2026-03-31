@@ -1,0 +1,172 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0" version="29.6.6" pages="2">
+  <diagram id="radar_signal_processing" name="信号处理软件框图">
+    <mxGraphModel dx="1704" dy="1656" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="x5B_VDwyYQh5jt48p1se-3" edge="1" parent="1" source="ext_frontend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="x5B_VDwyYQh5jt48p1se-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_frontend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1" value="前端阵面/FPGA&#xa;(3个独立阵面)" vertex="1">
+          <mxGeometry height="60" width="160" x="100" y="-260" as="geometry" />
+        </mxCell>
+        <mxCell id="STlzYMZ2Eo1LVuhKrpDo-2" edge="1" parent="1" source="ext_control" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;exitX=0.281;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="444" y="100" />
+              <mxPoint x="445" y="100" />
+            </Array>
+            <mxPoint x="445" y="80" as="sourcePoint" />
+            <mxPoint x="445" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ext_control" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1" value="服务器控制面 (Node 0)&#xa;任务调度/显控接入/时基管理" vertex="1">
+          <mxGeometry height="60" width="300" x="360" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_downstream" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1" value="数据处理与目标跟踪软件" vertex="1">
+          <mxGeometry height="60" width="160" x="100" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_support" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1" value="基础支撑功能&#xa;日志/监控/长期转存" vertex="1">
+          <mxGeometry height="60" width="160" x="720" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_boundary" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;startSize=30;" value="QDGZ300 信号处理软件 (服务器数据面 Node 1 | CPU/GPU 协同架构)" vertex="1">
+          <mxGeometry height="600" width="860" x="40" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_recv" parent="sys_boundary" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="原始数据接收与重组&#xa;(UDP收包/解析/校验)" vertex="1">
+          <mxGeometry height="60" width="160" x="60" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_cpi" parent="sys_boundary" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="完整 CPI 数据单元形成" vertex="1">
+          <mxGeometry height="60" width="160" x="60" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_snapshot" parent="sys_boundary" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="参数快照绑定与消费&#xa;(上下文/周期语义同步)" vertex="1">
+          <mxGeometry height="60" width="160" x="340" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_record" parent="sys_boundary" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="原始数据录制与回放协同" vertex="1">
+          <mxGeometry height="60" width="160" x="660" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_algo_group" parent="sys_boundary" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=2;startSize=24;" value="信号级处理核心算法链 (支持 GPU 加速)" vertex="1">
+          <mxGeometry height="220" width="760" x="60" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="x5B_VDwyYQh5jt48p1se-1" edge="1" parent="mod_algo_group" source="algo_ddc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="algo_dpc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_ddc" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="数字下变频&#xa;(DDC)" vertex="1">
+          <mxGeometry height="50" width="100" x="160" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_dpc" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="数字脉冲压缩&#xa;(DPC)" vertex="1">
+          <mxGeometry height="50" width="100" x="300" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_sparse" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="稀疏处理" vertex="1">
+          <mxGeometry height="50" width="100" x="435" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_mti" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="动目标指示&#xa;(MTI)" vertex="1">
+          <mxGeometry height="50" width="100" x="580" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_mtd" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="动目标检测&#xa;(MTD)" vertex="1">
+          <mxGeometry height="50" width="100" x="580" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_cfar" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="恒虚警(CFAR)/&#xa;旁瓣匿影/杂波图" vertex="1">
+          <mxGeometry height="50" width="100" x="440" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_param" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="目标参数提取&#xa;(距/速/角)" vertex="1">
+          <mxGeometry height="50" width="100" x="300" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="algo_pack" parent="mod_algo_group" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="目标数据打包" vertex="1">
+          <mxGeometry height="50" width="100" x="160" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_dpc_sparse" edge="1" parent="mod_algo_group" source="algo_dpc" target="algo_sparse">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_sparse_mti" edge="1" parent="mod_algo_group" source="algo_sparse" target="algo_mti">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_mti_mtd" edge="1" parent="mod_algo_group" source="algo_mti" target="algo_mtd">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_mtd_cfar" edge="1" parent="mod_algo_group" source="algo_mtd" target="algo_cfar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_cfar_param" edge="1" parent="mod_algo_group" source="algo_cfar" target="algo_param">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_param_pack" edge="1" parent="mod_algo_group" source="algo_param" target="algo_pack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_state" parent="sys_boundary" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="状态、质量与异常标记提取&#xa;(监视与自检)" vertex="1">
+          <mxGeometry height="60" width="280" x="540" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="mod_out" parent="sys_boundary" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="结构化结果输出与分发" vertex="1">
+          <mxGeometry height="60" width="160" x="60" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_recv_cpi" edge="1" parent="sys_boundary" source="mod_recv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mod_cpi" value="重组解析结果">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_cpi_snap" edge="1" parent="sys_boundary" source="mod_cpi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mod_snapshot" value="CPI 绑定请求">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_snap_ddc" edge="1" parent="sys_boundary" source="mod_snapshot" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="algo_ddc" value="完整CPI数据单元&#xa;+ 参数快照">
+          <mxGeometry relative="1" x="-0.1349" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="420" y="240" />
+              <mxPoint x="270" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_algo_out" edge="1" parent="sys_boundary" source="algo_pack" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mod_out" value="结构化数据">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_pack_state" edge="1" parent="sys_boundary" source="algo_pack" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="mod_state" value="标记/异常状态">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_recv_rec" edge="1" parent="sys_boundary" source="mod_recv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="mod_record" value="旁路原始报文">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_rec_support" edge="1" parent="sys_boundary" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;" value="异步转存与旁路输出">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="762" y="120" />
+            </Array>
+            <mxPoint x="770" y="120" as="sourcePoint" />
+            <mxPoint x="762" y="663" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_out_down" edge="1" parent="1" source="mod_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ext_downstream" value="目标数据/中间结果&#xa;+ 参数快照 + 质量标记">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_state_ctrl" edge="1" parent="1" source="mod_state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;entryX=0.732;entryY=1.043;entryDx=0;entryDy=0;entryPerimeter=0;" target="ext_control" value="状态/遥测摘要">
+          <mxGeometry relative="1" x="0.2608" y="20" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="880" y="680" />
+              <mxPoint x="880" y="330" />
+              <mxPoint x="580" y="330" />
+            </Array>
+            <mxPoint x="580" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_state_support" edge="1" parent="1" source="mod_state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.8;entryY=0;entryDx=0;entryDy=0;dashed=1;" target="ext_support" value="运行日志/诊断信息">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="x5B_VDwyYQh5jt48p1se-5" edge="1" parent="1" source="x5B_VDwyYQh5jt48p1se-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mod_recv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="x5B_VDwyYQh5jt48p1se-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;网卡收包&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="120" y="-50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="8CN7brZyFK-Y4aTrQPgr" name="第 2 页">
+    <mxGraphModel dx="1619" dy="788" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

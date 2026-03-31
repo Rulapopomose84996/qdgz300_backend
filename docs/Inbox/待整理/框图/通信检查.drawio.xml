@@ -1,0 +1,80 @@
+<mxfile host="Electron" modified="2023-10-24T14:00:00.000Z" agent="Mozilla/5.0" etag="qdgZ300_comm_check" version="22.0.4" type="device">
+  <diagram id="comm_check_arch" name="通信检查功能框图">
+    <mxGraphModel dx="1422" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="main_boundary" value="5.4.1 通信检查模块 (测试与校准模式)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1040" height="520" as="geometry" />
+        </mxCell>
+
+        <mxCell id="group_interfaces" value="覆盖接口范围 (正式接口)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;startSize=30;" vertex="1" parent="main_boundary">
+          <mxGeometry x="40" y="60" width="240" height="420" as="geometry" />
+        </mxCell>
+
+        <mxCell id="if_1" value="1) 上行原始数据接口&#xa;(前端→服务器 UDP流)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" vertex="1" parent="group_interfaces">
+          <mxGeometry x="20" y="50" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="if_2" value="2) 下行调度执行表接口&#xa;(服务器→前端 周期性)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" vertex="1" parent="group_interfaces">
+          <mxGeometry x="20" y="120" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="if_3" value="3) 管理/应急命令接口&#xa;(启停/复位/安全态等)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" vertex="1" parent="group_interfaces">
+          <mxGeometry x="20" y="190" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="if_4" value="4) ACK/遥测/状态接口&#xa;(RxAck/ApplyAck/心跳等)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" vertex="1" parent="group_interfaces">
+          <mxGeometry x="20" y="260" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="if_5" value="5) 时基边界事件接口&#xa;(1PPS/边界通知包)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" vertex="1" parent="group_interfaces">
+          <mxGeometry x="20" y="330" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="group_functions" value="通信检查核心功能项" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;startSize=30;" vertex="1" parent="main_boundary">
+          <mxGeometry x="400" y="60" width="300" height="420" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn_1" value="第一类：物理/网络连通检查&#xa;(网口/IP/端口/路由/收发方向)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="group_functions">
+          <mxGeometry x="20" y="50" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fn_2" value="第二类：协议正确性检查&#xa;(帧头尾/长度/版本/校验/结构约束)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="group_functions">
+          <mxGeometry x="20" y="110" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fn_3" value="第三类：回送/回显一致性检查&#xa;(载荷接收/回送比对/序号匹配)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="group_functions">
+          <mxGeometry x="20" y="170" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fn_4" value="第四类：控制链路闭环检查&#xa;(下发 → RxAck → ApplyAck 回传)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="group_functions">
+          <mxGeometry x="20" y="230" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fn_5" value="第五类：时基边界事件检查&#xa;(接收与序列一致性/时间来源与质量)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="group_functions">
+          <mxGeometry x="20" y="290" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fn_6" value="第六类：异常识别与标记&#xa;(误码/丢乱重截/超时/非法来源)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="group_functions">
+          <mxGeometry x="20" y="350" width="260" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="group_outputs" value="检查结果输出" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;startSize=30;" vertex="1" parent="main_boundary">
+          <mxGeometry x="820" y="60" width="180" height="420" as="geometry" />
+        </mxCell>
+
+        <mxCell id="out_1" value="链路正常判断结论" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="group_outputs">
+          <mxGeometry x="20" y="80" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="out_2" value="异常诊断标记&#xa;(异常帧/数据不一致等)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="group_outputs">
+          <mxGeometry x="20" y="200" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="out_3" value="运行状态上报/遥测" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="group_outputs">
+          <mxGeometry x="20" y="320" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_map" value="执行检查规则" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="main_boundary" source="group_interfaces" target="group_functions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_result" value="生成并上报" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="main_boundary" source="group_functions" target="group_outputs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

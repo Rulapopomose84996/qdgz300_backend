@@ -1,0 +1,154 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0" version="29.6.6">
+  <diagram id="radar_function_arch" name="软件功能体系框图">
+    <mxGraphModel dx="1619" dy="788" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="root_node" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=16;" value="QDGZ300 信号处理软件功能体系" vertex="1">
+          <mxGeometry height="50" width="360" x="440" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="main_line" edge="1" parent="1" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#666666;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="140" y="100" as="sourcePoint" />
+            <mxPoint x="1100" y="100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="root_to_main" edge="1" parent="1" source="root_node" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#666666;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="620" y="70" as="sourcePoint" />
+            <mxPoint x="620" y="100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_to_mod1" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;" target="mod_search" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="140" y="100" as="sourcePoint" />
+            <mxPoint x="140" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mod_search" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;startSize=30;" value="5.2 搜索模式处理功能" vertex="1">
+          <mxGeometry height="520" width="200" x="40" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="search_1" parent="mod_search" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="完整 CPI 数据单元消费" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="search_4" parent="mod_search" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="数字脉冲压缩 (DPC)&#xa;&amp; 稀疏处理" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="search_5" parent="mod_search" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="动目标指示/检测&#xa;(MTI / MTD)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="search_6" parent="mod_search" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="恒虚警 (CFAR) /&#xa;旁瓣匿影 / 杂波图" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="search_7" parent="mod_search" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="目标参数提取 (距/速/角)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="search_8" parent="mod_search" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" value="目标数据与上下文打包" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="line_to_mod2" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;" target="mod_track" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="380" y="100" as="sourcePoint" />
+            <mxPoint x="380" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mod_track" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;startSize=30;" value="5.3 跟踪/精跟模式功能" vertex="1">
+          <mxGeometry height="520" width="200" x="280" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="track_1" parent="mod_track" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="指定目标/波束数据提取" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="track_2" parent="mod_track" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="稳定目标检测处理" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="track_3" parent="mod_track" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="高置信度距离/速度测量" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="track_4" parent="mod_track" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="角度测量与参数精化" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="track_5" parent="mod_track" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="处理质量评估与标记" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="track_6" parent="mod_track" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="高精度结果绑定打包输出" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="line_to_mod3" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;" target="mod_test" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="620" y="100" as="sourcePoint" />
+            <mxPoint x="620" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mod_test" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;startSize=30;" value="5.4 测试与校准功能" vertex="1">
+          <mxGeometry height="520" width="200" x="520" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="test_1" parent="mod_test" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="5.4.1 通信检查&#xa;(误码/异常帧/链路状态)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="test_2" parent="mod_test" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="5.4.2 幅相校准&#xa;(频域分析/一致性计算)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="test_3" parent="mod_test" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="5.4.3 T/R 检查&#xa;(收态检查/发态检查)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="test_4" parent="mod_test" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="5.4.4 方向图检查&#xa;(专用目标检测与提取)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="test_5" parent="mod_test" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="5.4.5 回波显示&#xa;(指定通道/波位输出)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="test_6" parent="mod_test" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="5.4.6 干扰侦察&#xa;(单音/多音/宽带特征判定)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="line_to_mod4" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;" target="mod_exception" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="860" y="100" as="sourcePoint" />
+            <mxPoint x="860" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mod_exception" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;startSize=30;" value="5.5 降级与异常处理功能" vertex="1">
+          <mxGeometry height="520" width="200" x="760" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="exc_1" parent="mod_exception" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" value="数据包级异常识别&#xa;(缺包/乱序/截断/重复)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="exc_2" parent="mod_exception" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" value="时序与上下文异常判定&#xa;(快照缺失/模式不一致)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="exc_3" parent="mod_exception" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" value="异常数据隔离与标记" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="exc_4" parent="mod_exception" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" value="受限数据降级算法处理&#xa;(局部补偿/安全态运行)" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="exc_5" parent="mod_exception" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" value="异常标记与受限结果输出" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="line_to_mod5" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;" target="mod_monitor" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1100" y="100" as="sourcePoint" />
+            <mxPoint x="1100" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mod_monitor" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e3c800;strokeColor=#b09500;fontStyle=1;startSize=30;fontColor=#000000;" value="5.6 状态监视与自检功能" vertex="1">
+          <mxGeometry height="520" width="200" x="1000" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="mon_1" parent="mod_monitor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b09500;" value="上电初始化与配置检查" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mon_2" parent="mod_monitor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b09500;" value="数据接收健康状态监视" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="mon_3" parent="mod_monitor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b09500;" value="算法处理与资源状态监视" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="mon_4" parent="mod_monitor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b09500;" value="处理异常诊断留痕" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="mon_5" parent="mod_monitor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b09500;" value="状态摘要、统计与告警输出" vertex="1">
+          <mxGeometry height="40" width="160" x="20" y="370" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

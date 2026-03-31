@@ -1,0 +1,153 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0" version="29.6.6">
+  <diagram id="kKIm-VnA3zsZ88gKNbbH" name="第 1 页">
+    <mxGraphModel dx="1619" dy="2188" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=18;" value="信号处理软件数据处理图（接收 + 算法处理，按 CPU / GPU 划分）" vertex="1">
+          <mxGeometry height="90" width="620" x="325" y="-150" as="geometry" />
+        </mxCell>
+        <mxCell id="src_udp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="前端阵面 / FPGA&#xa;原始 UDP 数据流" vertex="1">
+          <mxGeometry height="70" width="140" x="20" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="src_ctx" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" value="共享周期状态 /&#xa;参数快照只读输入" vertex="1">
+          <mxGeometry height="70" width="140" x="20" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu_lane" parent="1" style="swimlane;whiteSpace=wrap;html=1;rounded=0;horizontal=0;startSize=32;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=15;" value="CPU（Node1 数据面：接收、重组、上下文挂载、GPU 调度、结果整理）" vertex="1">
+          <mxGeometry height="430" width="1120" x="180" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu7" parent="cpu_lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" value="原始包镜像旁路&#xa;（非阻塞，不反压主链）" vertex="1">
+          <mxGeometry height="60" width="170" x="170" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu8" parent="cpu_lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="GPU 结果接收 / D2H&#xa;结果整理、质量标记、异常标记" vertex="1">
+          <mxGeometry height="60" width="200" x="835" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu_lane" parent="1" style="swimlane;whiteSpace=wrap;html=1;rounded=0;horizontal=0;startSize=32;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=15;" value="GPU（Node1 数据面：信号级算法流水）" vertex="1">
+          <mxGeometry height="360" width="1120" x="180" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="wqrb1VsnzXOtHSzWoNja-3" edge="1" parent="gpu_lane" source="gpu5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="wqrb1VsnzXOtHSzWoNja-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu5" parent="gpu_lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;direction=west;" value="CFAR / 目标检测" vertex="1">
+          <mxGeometry height="60" width="130" x="690" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="wqrb1VsnzXOtHSzWoNja-2" parent="gpu_lane" style="rounded=0;whiteSpace=wrap;html=1;" value="旁瓣" vertex="1">
+          <mxGeometry height="60" width="120" x="790" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="网卡收包 / Socket 接收&#xa;（RX Ring → 用户态批量取包）" vertex="1">
+          <mxGeometry height="60" width="150" x="220" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="协议头解析&#xa;+ 基础合法性校验" vertex="1">
+          <mxGeometry height="60" width="140" x="390" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="wqrb1VsnzXOtHSzWoNja-1" edge="1" parent="1" source="cpu3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="cpu2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="包级组织 / PRT 重组&#xa;乱序 / 重复 / 截断识别" vertex="1">
+          <mxGeometry height="60" width="170" x="550" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="CPI 归并&#xa;+ 参数快照前移挂载" vertex="1">
+          <mxGeometry height="60" width="160" x="740" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="完整 CPI 数据单元形成&#xa;（数据 + 快照 + 异常标记）" vertex="1">
+          <mxGeometry height="60" width="180" x="920" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cpu6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="GPU 任务提交 / H2D 拷贝&#xa;流与批次调度" vertex="1">
+          <mxGeometry height="60" width="150" x="1120" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;direction=west;" value="DDC&#xa;数字下变频" vertex="1">
+          <mxGeometry height="60" width="120" x="240" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;direction=west;" value="DBF&#xa;数字波束形成" vertex="1">
+          <mxGeometry height="60" width="120" x="390" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;direction=west;" value="DPC&#xa;数字脉压" vertex="1">
+          <mxGeometry height="60" width="120" x="540" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;direction=west;" value="杂波抑制 / MTI / MTD" vertex="1">
+          <mxGeometry height="60" width="150" x="690" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="gpu6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;direction=west;" value="目标参数提取&#xa;（距离 / 速度 / 角度）" vertex="1">
+          <mxGeometry height="60" width="170" x="1030" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="out1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" value="输出到下游数据处理 / 目标跟踪&#xa;点迹/目标结果 + 参数快照透传&#xa;+ 质量标记 + 异常标记" vertex="1">
+          <mxGeometry height="80" width="210" x="1390" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="out2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" value="录制 / 回放协同接口&#xa;原始包镜像 / 重组结果证据链" vertex="1">
+          <mxGeometry height="70" width="160" x="10" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#ffffff;strokeColor=#999999;fontSize=13;" value="时序口径：秒边界换表，数据面按 CPI 边界逐单元推进；&#xa;数据面不直接管理秒边界，而是消费共享周期状态与参数快照。" vertex="1">
+          <mxGeometry height="60" width="520" x="560" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="src_udp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="cpu1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="cpu2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="cpu3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="cpu4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="cpu5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="cpu6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="gpu1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1250" y="330" />
+              <mxPoint x="300" y="330" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="gpu1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="gpu2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="gpu2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="gpu3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="gpu3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="gpu4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="gpu4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="gpu5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="gpu5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="gpu6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="gpu6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="cpu8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="cpu8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;" target="out1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="src_ctx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=block;endFill=1;strokeColor=#b85450;strokeWidth=2;" target="cpu4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="820" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="cpu1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=block;endFill=1;strokeColor=#d6b656;strokeWidth=2;" target="cpu7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="215" />
+              <mxPoint x="435" y="215" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="cpu7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=block;endFill=1;strokeColor=#d6b656;strokeWidth=2;" target="out2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wqrb1VsnzXOtHSzWoNja-4" edge="1" parent="1" source="wqrb1VsnzXOtHSzWoNja-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.412;entryY=-0.017;entryDx=0;entryDy=0;entryPerimeter=0;" target="gpu6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
